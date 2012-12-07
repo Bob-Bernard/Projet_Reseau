@@ -1,0 +1,19 @@
+													
+													acceptClient()
+													
+													Authentification()
+																/ \
+							 si controleur   /   \  si employé
+							                /     \  Verification_demande_rapport()
+							               /       \ 
+							              /         \ 
+ 
+        th_Recieved_Empl_List()     th_Gestion_Rapport_PDF()
+   [liste.txt ou envoi un à un]
+																				-> envoi_PDF()
+        					| 		                -> dl_pdf()
+        					|                   
+
+        th_verif_presence_rapport()     
+
+       				-> dl_PDF() 	
