@@ -9,9 +9,8 @@
 							              /         \ 
  
         th_Recieved_Empl_List()     th_Gestion_Rapport_PDF()
-   [liste.txt ou envoi un à un]
-																				-> envoi_PDF()
-        					| 		                -> dl_pdf()
+   [liste.txt ou envoi un à un]         -> Reception_rapport_employé()
+																				-> dl_pdf()
         					|                   
 
         th_verif_presence_rapport()     
