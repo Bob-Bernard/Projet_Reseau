@@ -1,15 +1,16 @@
 CFLAGS = -lpthread -Wall
 LDFLAGS=
+LIB_FOLDER=libs
 CC=g++
 EXEC= server
 
 all: $(EXEC) 
 
-server: sockdist.o sock.o serverounet.o
+server: $(LIB_FOLDER)/sockdist.o $(LIB_FOLDER)/sock.o serverounet.o
 	$(CC) -o $@ $^ $(CFLAGS)
 	
 #%.o: %.cc $(CC) -c $< $(LDFLAGS)
-m
+
 .PHONY: clean mrproper
 
 clean:

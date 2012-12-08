@@ -1,7 +1,8 @@
-#include "sockdist.h"
-#include "sock.h"
+#include "libs/sockdist.h"
+#include "libs/sock.h"
 
 #include <string>
+#include <stdio.h>
 #include <iostream>
 #include <stdlib.h>
 
@@ -119,7 +120,6 @@ int main(int args,char* argv[]) {
 		else {
 				cout << "Nouveau client accepté !" << endl;
 				pthread_t idThread;
-				ListeIdThread[nb_client]=idThread;
 				nb_client++;
 		}
 		
@@ -133,7 +133,7 @@ int main(int args,char* argv[]) {
 	
 	/* Attente de tout les threads créés*/
 //	for(int i=0; i<nb_client; i++)
-//  {gi
+//  {
 //    pthread_join(ListeIdThread[i],NULL);
 //  }
   
