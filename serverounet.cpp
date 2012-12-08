@@ -78,7 +78,67 @@ pthread_exit(NULL);
 
 
 int main(int args,char* argv[]) {
-
+	int port, desBR, DesServer, BRLocal;
+	int nb_client = 0;
+	struct sockaddr_in brCv;
+	socklen_t lgLoc;
+	
+	if(args == 2) {
+		cout << "N° port saisit : "<< argv[1] << endl;
+		port = atoi(argv[1]);
+	}
+	else {
+		cout << "Numéro du port du server : ";	
+		cin >> port;
+	}
+	
+	/* Création de la BR Publique */
+	Sock* server = new Sock(SOCK_STREAM,(short)htons(port),0);
+	if(server->good()) {
+		cout << "Server lancé !" << endl;		
+		DesServer = server->getsDesc();
+		BRLocal = server-> getsRetour();
+		lgLoc = sizeof(brCv);
+	}
+	else {
+		perror("Erreur Sock()");
+		exit(EXIT_FAILURE);
+	}
+	
+/* Création file */
+		if(listen(DesServer,5) == -1)
+		perror("Erreur listen");
+		
+		
+	while (1)
+	{
+/* Acceptation de la connexion du client */
+		desBR = accept(DesServer,(struct sockaddr *)&brCv,&lgLoc);
+		if(desBR == -1)
+			perror("Erreur accept ");	
+		else {
+				cout << "Nouveau client accepté !" << endl;
+				pthread_t idThread;
+				ListeIdThread[nb_client]=idThread;
+				nb_client++;
+		}
+		
+		
+		
+		
+		
+		
+		
+	} // End loop
+	
+	/* Attente de tout les threads créés*/
+//	for(int i=0; i<nb_client; i++)
+//  {gi
+//    pthread_join(ListeIdThread[i],NULL);
+//  }
+  
+	/* Fermeture socket server */
+	close(DesServer);
 
 return EXIT_SUCCESS;
 }
