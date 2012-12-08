@@ -15,6 +15,7 @@ server: $(LIB_FOLDER)/sockdist.o $(LIB_FOLDER)/sock.o serverounet.o
 
 clean:
 	rm -rf *.o
+	rm -rf $(LIB_FOLDER)/*.o
 
 mrproper: clean
 	rm -rf $(EXEC)
