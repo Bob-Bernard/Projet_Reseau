@@ -79,7 +79,7 @@ pthread_exit(NULL);
 
 
 int main(int args,char* argv[]) {
-	int port, desBR, DesServer, BRLocal;
+	int port, descripteurBR, DesServer, BRLocal;
 	int nb_client = 0;
 	struct sockaddr_in brCv;
 	socklen_t lgLoc;
@@ -108,20 +108,20 @@ int main(int args,char* argv[]) {
 	
 /* Création file */
 		if(listen(DesServer,5) == -1)
-		perror("Erreur listen");
-		
+		perror("Erreur listen");		
 		
 	while (1)
 	{
 /* Acceptation de la connexion du client */
-		desBR = accept(DesServer,(struct sockaddr *)&brCv,&lgLoc);
-		if(desBR == -1)
+		descripteurBR = accept(DesServer,(struct sockaddr *)&brCv,&lgLoc);
+		if(descripteurBR == -1)
 			perror("Erreur accept ");	
 		else {
 				cout << "Nouveau client accepté !" << endl;
 				pthread_t idThread;
 				nb_client++;
 		}
+		
 		
 		
 		
