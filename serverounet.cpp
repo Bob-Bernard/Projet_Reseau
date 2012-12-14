@@ -9,11 +9,20 @@
 #include <sys/types.h>
 #include <sys/socket.h>
 
-typedef struct {
-}employe;
+#define BUFFER_SIZE 1024
+#define REFUSE 0
+#define CLIENT_OK 1
+#define CLIENT_OK_DISPO 2
+#define CONTROLEUR_OK 3
 
 typedef struct {
-}controleur;
+  char message[BUFFER_SIZE];
+	int des_client;
+	char* name;
+	char* password;
+	bool controler;
+}client;
+
 
 
 /**
@@ -28,7 +37,7 @@ void dl_pdf()
 * Retourne vrai si l'employé donné en argument doit envoyer un rapport
 * @param : employé
 **/
-bool Verification_demande_rapport(employe emp)
+bool Verification_demande_rapport(client emp)
 {
 
 return true;
@@ -72,17 +81,72 @@ pthread_exit(NULL);
 void * th_Verif_presence_rapport(void* param) 
 {
 
-pthread_exit(NULL);
+	pthread_exit(NULL);
 }
 
 
+int isClient(client* client, client* listeClientsEntreprise[])
+{
+	int status;
+	int i=0;
+	
+	while (listeClientsEntreprise[i] != NULL)
+	{
+		if(listeClientsEntreprise[i]->name == client->name) {		
+			if(client->controler == true) {
+				status = CONTROLEUR_OK;
+			}
+			else if(Verification_demande_rapport)	{
+					status = CLIENT_OK_DISPO;	
+			}
+			else {
+				status = CLIENT_OK;
+		  }
+		}
+		i++;
+	} // end loop
+	
+
+return status;
+}
+
+int authentification (client* client,client * listeClientsEntreprise[])
+{
+	int authentifie = 0;
+	int reception = 1;
+	int statusClient = 0;
+
+	while(!reception)
+	{
+		reception = read(client->des_client,client->message,sizeof(client->message));
+		if(reception > 0)
+			perror("Erreur réception");
+		else {
+			cout <<"Login reçu : " << client->message << endl;
+			
+			statusClient = isClient(client,listeClientsEntreprise);
+			switch(statusClient) {
+				case 1 : authentifie = CLIENT_OK; break;
+				case 2 : authentifie = CLIENT_OK_DISPO; break;
+				case 3 : authentifie = CONTROLEUR_OK; break;		
+				default : authentifie = REFUSE; break;
+			}
+		}
+	}
+return authentifie;
+}
 
 
 int main(int args,char* argv[]) {
-	int port, descripteurBR, DesServer, BRLocal;
+	int port, desBrClient, DesServer, BRLocal;
 	int nb_client = 0;
 	struct sockaddr_in brCv;
 	socklen_t lgLoc;
+	client* listeClientsEntreprise[50];
+	client* clicli;
+	clicli->name ="tintin";
+	listeClientsEntreprise[0] = clicli;
+	
 	
 	if(args == 2) {
 		cout << "N° port saisit : "<< argv[1] << endl;
@@ -113,22 +177,31 @@ int main(int args,char* argv[]) {
 	while (1)
 	{
 /* Acceptation de la connexion du client */
-		descripteurBR = accept(DesServer,(struct sockaddr *)&brCv,&lgLoc);
-		if(descripteurBR == -1)
-			perror("Erreur accept ");	
+		desBrClient = accept(DesServer,(struct sockaddr *)&brCv,&lgLoc);
+		if(desBrClient == -1)
+			perror("Erreur accept ");
 		else {
-				cout << "Nouveau client accepté !" << endl;
-				pthread_t idThread;
-				nb_client++;
-		}
+			cout << "Nouveau client accepté !" << endl;
+			client* currentCli; 
+				currentCli->des_client = desBrClient;
+			  
+			listeClientsEntreprise[nb_client]= currentCli;
+			//pthread_t idThread;
+			nb_client++;
+		
+			if(authentification(currentCli,listeClientsEntreprise) == 0) {
+				close(desBrClient);
+			}
+			else {
 		
 		
 		
 		
 		
 		
-		
-		
+			} // End if authentification()
+			
+		}// End if client accepté
 	} // End loop
 	
 	/* Attente de tout les threads créés*/
@@ -136,6 +209,7 @@ int main(int args,char* argv[]) {
 //  {
 //    pthread_join(ListeIdThread[i],NULL);
 //  }
+  
   
 	/* Fermeture socket server */
 	close(DesServer);
