@@ -3,15 +3,15 @@ LDFLAGS=
 LIB_FOLDER=libs
 CC=g++
 CC2=gcc
-EXEC= server client  clean 
+EXEC= server client 
 
 all: $(EXEC) 
 
 server: $(LIB_FOLDER)/sockdist.o $(LIB_FOLDER)/sock.o serverounet.o
-	$(CC) -o $@ $^ $(CFLAGS)
+	$(CC) -o exec/$@ $^ $(CFLAGS)
  
 client: $(LIB_FOLDER)/sockdist.o $(LIB_FOLDER)/sock.o clientounet.o
-	$(CC) -o $@ $^ $(CFLAGS)
+	$(CC) -o exec/$@ $^ $(CFLAGS)
 	
 
 		
@@ -24,4 +24,4 @@ clean:
 	rm -rf $(LIB_FOLDER)/*.o
 
 mrproper: clean
-	rm -rf $(EXEC)
+	rm -rf exec/*

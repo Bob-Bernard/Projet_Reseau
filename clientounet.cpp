@@ -1,6 +1,6 @@
 #include "libs/sockdist.h"
 #include "libs/sock.h"
-#include <string>
+#include <string.h>
 #include <stdio.h>
 #include <iostream>
 #include <stdlib.h>
