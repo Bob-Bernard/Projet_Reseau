@@ -10,7 +10,7 @@
 #include <sys/socket.h>
 
 #define BUFFER_SIZE 1024
-#define REFUSE 0
+#define CLIENT_REFUSE 0
 #define CLIENT_OK 1
 #define CLIENT_OK_DISPO 2
 #define CONTROLEUR_OK 3
@@ -21,6 +21,7 @@ struct Client{
 	char* name;
 	char* password;
 	bool controller;
+	bool rapport;
 };
 typedef Client* P_Client;
 
@@ -38,10 +39,9 @@ void dl_pdf()
 * Retourne vrai si l'employé donné en argument doit envoyer un rapport
 * @param : employé
 **/
-bool Verification_demande_rapport(Client emp)
+bool Verification_demande_rapport(Client* emp)
 {
-
-return true;
+  return employe->rapport;
 }
 
 /**
@@ -86,18 +86,18 @@ void * th_Verif_presence_rapport(void* param)
 }
 
 
-int isClient(P_Client client, P_Client listeClientsEntreprise[])
+int isClient(char* client_name, P_Client listeClientsEntreprise[])
 {
 	int status;
 	int i=0;
 	
 	while (listeClientsEntreprise[i] != NULL)
 	{
-		if(listeClientsEntreprise[i]->name == client->name) {		
-			if(client->controller == true) {
+		if(listeClientsEntreprise[i]->name == client_name) {		
+			if(listeClientsEntreprise[i]->controller == true) {
 				status = CONTROLEUR_OK;
 			}
-			else if(Verification_demande_rapport)	{
+			else if(Verification_demande_rapport(listeClientsEntreprise[i]) )	{
 					status = CLIENT_OK_DISPO;	
 			}
 			else {
@@ -111,43 +111,52 @@ int isClient(P_Client client, P_Client listeClientsEntreprise[])
 return status;
 }
 
-int authentification (P_Client Client,P_Client listeClientsEntreprise[])
+int authentification (int desClient,int nb_Client, P_Client listeClientsEntreprise[])
 {
-	int authentifie = 0;
-	int reception = 1;
-	int statusClient = 0;
+	int authentifie(0),reception(0),statusClient(0);
+	Client currentCli;
 
-	while(!reception)
-	{
-		reception = read(Client->des_Client,Client->message,sizeof(Client->message));
-		if(reception > 0)
-			perror("Erreur réception");
-		else {
-			cout <<"Login reçu : " << Client->message << endl;
-			
-			statusClient = isClient(Client,listeClientsEntreprise);
-			switch(statusClient) {
-				case 1 : authentifie = CLIENT_OK; break;
-				case 2 : authentifie = CLIENT_OK_DISPO; break;
-				case 3 : authentifie = CONTROLEUR_OK; break;		
-				default : authentifie = REFUSE; break;
-			}
-		}
-	}
+	reception = read(desClient,currentCli.message,sizeof(currentCli.message));
+	if(!reception)
+		perror("Erreur réception read()");
+	else {
+		cout <<"Login reçu : " << currentCli.message << endl;	
+		statusClient = isClient(currentCli.message,listeClientsEntreprise);
+	  
+	  if(statusClient == CLIENT_REFUSE) {
+	    authentifie = CLIENT_REFUSE;
+	  }
+	  else {
+		  currentCli.des_Client= desClient;
+      currentCli.name = currentCli.message;
+		  currentCli.controller = false;
+		  		                          
+		  switch(statusClient) 
+		  {		   
+			  case CLIENT_OK : authentifie = CLIENT_OK; break;
+			  case CLIENT_OK_DISPO : authentifie = CLIENT_OK_DISPO; break;
+			  case CONTROLEUR_OK : authentifie = CONTROLEUR_OK;  
+			                         currentCli.controller = true; break;		
+			  default : perror("Erreur switch statusClient");
+		  }
+		  listeClientsEntreprise[nb_Client] =  &currentCli;			
+	  }
+	} // End if(reception > 0)
 return authentifie;
 }
 
 
 int main(int args,char* argv[]) {
-	int port, desBrClient, DesServer, BRLocal;
+	int port, desBrClient, DesServer, BRLocal, statusClient;
 	int nb_Client = 0;
 	struct sockaddr_in brCv;
 	socklen_t lgLoc;
-	Client* listeClientsEntreprise[50];
-//	Client* clicli;
-//	clicli->name ="tintin";
-//	listeClientsEntreprise[0] = clicli;
+	P_Client listeClientsEntreprise[50];
 	
+	/* Petit test ici */
+  Client clicli;
+  clicli.name ="tintin";
+  listeClientsEntreprise[0] = &clicli;	
 	
 	if(args == 2) {
 		cout << "N° port saisit : "<< argv[1] << endl;
@@ -177,31 +186,35 @@ int main(int args,char* argv[]) {
 		
 	while (1)
 	{
+	
 /* Acceptation de la connexion du Client */
 		desBrClient = accept(DesServer,(struct sockaddr *)&brCv,&lgLoc);
 		if(desBrClient == -1)
 			perror("Erreur accept ");
 		else {
-			cout << "Nouveau Client accepté !" << endl;
-			Client* currentCli; 
-				currentCli->des_Client = desBrClient;
-			  
-			listeClientsEntreprise[nb_Client]= currentCli;
-			//pthread_t idThread;
-			nb_Client++;
-		
-			if(authentification(currentCli,listeClientsEntreprise) == 0) {
+			cout << "Nouveau Client accepté" << endl;	
+			statusClient = authentification(desBrClient,nb_Client,listeClientsEntreprise);
+			if(statusClient == 0) {
 				close(desBrClient);
 			}
-			else {
-		
-		
-		
-		
-		
-		
-			} // End if authentification()
-			
+			else 
+			{
+ 			  nb_Client++;
+			  //pthread_t idThread;
+			  		  
+			  switch(statusClient) 
+			  {
+			    case CLIENT_OK : cout << "Je suis client !"<< endl; break;
+			    case CLIENT_OK_DISPO : cout << "Je suis client/ dispo"<< endl; break;
+			    case CONTROLEUR_OK : cout << "Je suis controleur !"<< endl; break;
+			    default : perror("Petit souci switch(statusClient)"); 
+			              exit(EXIT_FAILURE);
+			              break;
+			  } // End switch
+			  
+			  
+			  	
+			} // End if authentification()			
 		}// End if Client accepté
 	} // End loop
 	
