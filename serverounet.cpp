@@ -47,9 +47,9 @@ bool Verification_demande_rapport(Client* employe)
 /**
 * Reception d'un rapport d'un employé
 **/
-void Reception_rapport_employe()
+void reception_rapport_employe(Client* employe)
 {
-
+  
 }
 
 /**
@@ -67,10 +67,11 @@ pthread_exit(NULL);
 **/
 void * th_Gestion_Rapport_PDF(void* param) 
 {
-
-Reception_rapport_employe();
-dl_pdf();
-
+  Client* client = (Client*)param;
+  cout << "Début de saisie d'un rapport de l'employe : "<< client->name << endl;
+  
+  reception_rapport_employe(client);
+  dl_pdf();
 
 pthread_exit(NULL);
 }
@@ -210,8 +211,7 @@ int main(int args,char* argv[]) {
 			      if(pthread_create(&idThread,NULL,th_Gestion_Rapport_PDF,listeClientsEntreprise[nb_Client])!= 0){
 			        perror("Erreur création thread");
 			      }
-			      break;
-			      
+			      break;			      
 			    case CONTROLEUR_OK : cout << "Je suis controleur !"<< endl; break;
 			    default : perror("Petit souci switch(statusClient)"); 
 			              exit(EXIT_FAILURE);
