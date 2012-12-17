@@ -39,7 +39,7 @@ void dl_pdf()
 * Retourne vrai si l'employé donné en argument doit envoyer un rapport
 * @param : employé
 **/
-bool Verification_demande_rapport(Client* emp)
+bool Verification_demande_rapport(Client* employe)
 {
   return employe->rapport;
 }
@@ -136,7 +136,8 @@ int authentification (int desClient,int nb_Client, P_Client listeClientsEntrepri
 			  case CLIENT_OK : authentifie = CLIENT_OK; break;
 			  case CLIENT_OK_DISPO : authentifie = CLIENT_OK_DISPO; break;
 			  case CONTROLEUR_OK : authentifie = CONTROLEUR_OK;  
-			                         currentCli.controller = true; break;		
+			                       currentCli.controller = true; 
+			                       break;		
 			  default : perror("Erreur switch statusClient");
 		  }
 		  listeClientsEntreprise[nb_Client] =  &currentCli;			
@@ -184,7 +185,7 @@ int main(int args,char* argv[]) {
 		if(listen(DesServer,5) == -1)
 		perror("Erreur listen");		
 		
-	while (1)
+	while(1)
 	{
 	
 /* Acceptation de la connexion du Client */
@@ -199,21 +200,25 @@ int main(int args,char* argv[]) {
 			}
 			else 
 			{
- 			  nb_Client++;
-			  //pthread_t idThread;
-			  		  
+ 			  pthread_t idThread;			  		  
 			  switch(statusClient) 
 			  {
-			    case CLIENT_OK : cout << "Je suis client !"<< endl; break;
-			    case CLIENT_OK_DISPO : cout << "Je suis client/ dispo"<< endl; break;
+			    // Juste une trace, mais dans ce cas ci, le client sera déconnecté.
+			    case CLIENT_OK : cout << "Je suis client !"<< endl;break;
+			    			    
+			    case CLIENT_OK_DISPO : cout << "Je suis client, rapport dispo !"<< endl; 
+			      if(pthread_create(&idThread,NULL,th_Gestion_Rapport_PDF,listeClientsEntreprise[nb_Client])!= 0){
+			        perror("Erreur création thread");
+			      }
+			      break;
+			      
 			    case CONTROLEUR_OK : cout << "Je suis controleur !"<< endl; break;
 			    default : perror("Petit souci switch(statusClient)"); 
 			              exit(EXIT_FAILURE);
 			              break;
 			  } // End switch
 			  
-			  
-			  	
+			  nb_Client++; 	
 			} // End if authentification()			
 		}// End if Client accepté
 	} // End loop

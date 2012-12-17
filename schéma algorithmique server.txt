@@ -2,9 +2,10 @@
 													acceptClient()
 													
 													Authentification()
+										 + Verification_demande_rapport()
 																/ \
 							 si controleur   /   \  si employé
-							                /     \  Verification_demande_rapport()
+							                /     \  
 							               /       \ 
 							              /         \ 
  
