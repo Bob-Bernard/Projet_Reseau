@@ -31,7 +31,7 @@ typedef Client* P_Client;
 /**
 * Gère l'envoi du rapport PDF à l'employé
 **/
-void dl_pdf()
+void telechargement_pdf(Client* client)
 {
 
 }
@@ -40,13 +40,13 @@ void dl_pdf()
 * Retourne vrai si l'employé donné en argument doit envoyer un rapport
 * @param : employé
 **/
-bool Verification_demande_rapport(Client* employe)
+bool verification_demande_rapport(Client* employe)
 {
   return employe->claimed_report;
 }
 
 /**
-* Reception d'un rapport d'un employé
+* Réception d'un rapport que doit envoyer un employé
 **/
 void reception_rapport_employe(Client* employe)
 {
@@ -68,12 +68,26 @@ pthread_exit(NULL);
 **/
 void * th_Gestion_Rapport_PDF(void* param) 
 {
-  Client* client = (Client*)param;
-  cout << "Début de saisie d'un rapport de l'employe : "<< client->name << endl;
+  Client* employe = (Client*)param;
+  int continu = 1;
   
-  reception_rapport_employe(client);
-  dl_pdf();
-
+  cout << "Bonjour "<< employe->name <<" !"<< endl;
+  while(quit > 0)
+  {
+    cout << "Que voulez vous faire ?" << endl;
+    cout << "1 : Saisir un rapport."<< endl;
+    cout << "2 : Télécharger un rapport déjà saisi."<< endl;
+    cout << "3 : Quitter" << endl;    
+    cout << "Tappez le chiffre correspondant à votre demande";
+    
+    cin >> reponse;
+    switch(reponse) {
+      case 1 : reception_rapport_employe(employe); break;
+      case 2 : telechargement_pdf(employe); break;
+      case 3 : quit = 0; break;
+      default : cout << "Erreur de saisie, veuillez recommencer" << endl;
+    }
+  }  
 pthread_exit(NULL);
 }
 
@@ -99,7 +113,7 @@ int isClient(Client client, P_Client listeClientsEntreprise[])
 			if(listeClientsEntreprise[i]->controller == true) {
 				status = CONTROLEUR_OK;
 			}
-			else if(Verification_demande_rapport(listeClientsEntreprise[i]) )	{
+			else if(verification_demande_rapport(listeClientsEntreprise[i]) )	{
 			// on affecte la propriété 'controller' au controller authentifié
 			    listeClientsEntreprise[i]->controller=true;
 					status = CLIENT_OK_DISPO;	
@@ -139,7 +153,7 @@ int authentification (int desClient,int nb_Client, P_Client listeClientsEntrepri
 			  case CONTROLEUR_OK : authentifie = CONTROLEUR_OK; break;		
 			  default : perror("Erreur switch statusClient");
 		  }		
-	  } // End if (status ...)
+	  } // End if (statusClient == ...)
 	} // End if(reception > 0)
 	
 return authentifie;
@@ -159,7 +173,7 @@ int main(int args,char* argv[]) {
   listeClientsEntreprise[0] = &clicli;	
 	
 	if(args == 2) {
-		cout << "N° port saisit : "<< argv[1] << endl;
+		cout << "N° port saisi : "<< argv[1] << endl;
 		port = atoi(argv[1]);
 	}
 	else {
@@ -203,10 +217,10 @@ int main(int args,char* argv[]) {
 			  switch(statusClient) 
 			  {
 			    // Juste une trace, mais dans ce cas ci, le client sera déconnecté.
-			    case CLIENT_OK : cout << "Je suis client !"<< endl;break;
-			    			    
+			    case CLIENT_OK : cout << "Je suis client !"<< endl; break;			    			    
 			    case CLIENT_OK_DISPO : cout << "Je suis client, rapport dispo !"<< endl; 
-			      if(pthread_create(&idThread,NULL,th_Gestion_Rapport_PDF,(void*)listeClientsEntreprise[nb_Client])!= 0){
+			      if(pthread_create(&idThread,NULL,th_Gestion_Rapport_PDF,
+			      (void*)listeClientsEntreprise[nb_Client])!= 0){
 			        perror("Erreur création thread");
 			      }
 			      break;			      
@@ -217,7 +231,7 @@ int main(int args,char* argv[]) {
 			  } // End switch
 			  
 			  nb_Client++; 	
-			} // End if authentification()			
+			} // End if (statusClient == 0)
 		}// End if Client accepté
 	} // End loop
 	
