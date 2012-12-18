@@ -21,7 +21,8 @@ struct Client{
 	char* name;
 	char* password;
 	bool controller;
-	bool rapport;
+	bool claimed_report;
+	bool recieved_report;
 };
 typedef Client* P_Client;
 
@@ -41,7 +42,7 @@ void dl_pdf()
 **/
 bool Verification_demande_rapport(Client* employe)
 {
-  return employe->rapport;
+  return employe->claimed_report;
 }
 
 /**
@@ -87,63 +88,60 @@ void * th_Verif_presence_rapport(void* param)
 }
 
 
-int isClient(char* client_name, P_Client listeClientsEntreprise[])
+int isClient(Client client, P_Client listeClientsEntreprise[])
 {
-	int status;
-	int i=0;
+	int status(0),i(0);
 	
 	while (listeClientsEntreprise[i] != NULL)
 	{
-		if(listeClientsEntreprise[i]->name == client_name) {		
+		if(listeClientsEntreprise[i]->name == client.name) 
+		{
 			if(listeClientsEntreprise[i]->controller == true) {
 				status = CONTROLEUR_OK;
 			}
 			else if(Verification_demande_rapport(listeClientsEntreprise[i]) )	{
+			// on affecte la propriété 'controller' au controller authentifié
+			    listeClientsEntreprise[i]->controller=true;
 					status = CLIENT_OK_DISPO;	
 			}
 			else {
 				status = CLIENT_OK;
 		  }
+      // on affecte le descripteur temporaire à son propritaire autentifié
+		  listeClientsEntreprise[i]->des_Client = client.des_Client;
 		}
 		i++;
+		
 	} // end loop
-	
-
 return status;
 }
 
 int authentification (int desClient,int nb_Client, P_Client listeClientsEntreprise[])
 {
 	int authentifie(0),reception(0),statusClient(0);
-	Client currentCli;
+	Client tempCli;
 
-	reception = read(desClient,currentCli.message,sizeof(currentCli.message));
+	reception = read(desClient,tempCli.message,sizeof(tempCli.message));
 	if(!reception)
 		perror("Erreur réception read()");
 	else {
-		cout <<"Login reçu : " << currentCli.message << endl;	
-		statusClient = isClient(currentCli.message,listeClientsEntreprise);
+		cout <<"Login reçu : " << tempCli.message << endl;	
+		statusClient = isClient(tempCli,listeClientsEntreprise);
 	  
 	  if(statusClient == CLIENT_REFUSE) {
 	    authentifie = CLIENT_REFUSE;
 	  }
-	  else {
-		  currentCli.des_Client= desClient;
-      currentCli.name = currentCli.message;
-		  currentCli.controller = false;
-		  		                          
+	  else {                        
 		  switch(statusClient) 
 		  {		   
 			  case CLIENT_OK : authentifie = CLIENT_OK; break;
 			  case CLIENT_OK_DISPO : authentifie = CLIENT_OK_DISPO; break;
-			  case CONTROLEUR_OK : authentifie = CONTROLEUR_OK;  
-			                       currentCli.controller = true; 
-			                       break;		
+			  case CONTROLEUR_OK : authentifie = CONTROLEUR_OK; break;		
 			  default : perror("Erreur switch statusClient");
-		  }
-		  listeClientsEntreprise[nb_Client] =  &currentCli;			
-	  }
+		  }		
+	  } // End if (status ...)
 	} // End if(reception > 0)
+	
 return authentifie;
 }
 
@@ -208,7 +206,7 @@ int main(int args,char* argv[]) {
 			    case CLIENT_OK : cout << "Je suis client !"<< endl;break;
 			    			    
 			    case CLIENT_OK_DISPO : cout << "Je suis client, rapport dispo !"<< endl; 
-			      if(pthread_create(&idThread,NULL,th_Gestion_Rapport_PDF,listeClientsEntreprise[nb_Client])!= 0){
+			      if(pthread_create(&idThread,NULL,th_Gestion_Rapport_PDF,(void*)listeClientsEntreprise[nb_Client])!= 0){
 			        perror("Erreur création thread");
 			      }
 			      break;			      
@@ -223,14 +221,7 @@ int main(int args,char* argv[]) {
 		}// End if Client accepté
 	} // End loop
 	
-	/* Attente de tout les threads créés*/
-//	for(int i=0; i<nb_Client; i++)
-//  {
-//    pthread_join(ListeIdThread[i],NULL);
-//  }
-  
-  
-	/* Fermeture socket server */
+/* Fermeture socket server */
 	close(DesServer);
 
 return EXIT_SUCCESS;
