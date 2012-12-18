@@ -56,7 +56,7 @@ void reception_rapport_employe(Client* employe)
 /**
 * Reception de la liste d'employés devant envoyer un rapport
 **/
-void* th_Recieved_Empl_List(void* param) 
+void* th_Recieved_Empl_List(void* param)
 {
 
 pthread_exit(NULL);
@@ -69,10 +69,10 @@ pthread_exit(NULL);
 void * th_Gestion_Rapport_PDF(void* param) 
 {
   Client* employe = (Client*)param;
-  int continu = 1;
+  int reponse = 1;
   
   cout << "Bonjour "<< employe->name <<" !"<< endl;
-  while(quit > 0)
+  while(reponse == 0)
   {
     cout << "Que voulez vous faire ?" << endl;
     cout << "1 : Saisir un rapport."<< endl;
@@ -84,7 +84,7 @@ void * th_Gestion_Rapport_PDF(void* param)
     switch(reponse) {
       case 1 : reception_rapport_employe(employe); break;
       case 2 : telechargement_pdf(employe); break;
-      case 3 : quit = 0; break;
+      case 3 : reponse = 0; break;
       default : cout << "Erreur de saisie, veuillez recommencer" << endl;
     }
   }  
