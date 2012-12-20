@@ -190,7 +190,7 @@ void* th_new_client(void* param)
       case CLIENT_OK : cout << "C'est un client !"<< endl; break;			    			    
       case CLIENT_OK_DISPO : cout << "JC'est un client, rapport dispo !"<< endl; 
         if(pthread_create(&idThread,NULL,th_Gestion_Rapport_PDF,
-        (void*)data->ptr_client_list[data->nb_client])!= 0){
+        (void*)data->ptr_client_list[*data->nb_client])!= 0){
           perror("Erreur création thread");
         }
         break;			      
