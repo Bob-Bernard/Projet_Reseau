@@ -1,9 +1,9 @@
 CFLAGS = -lpthread -Wall
-LDFLAGS=
+FLAGS=`pkg-config --cflags --libs gtk+-2.0`
 LIB_FOLDER=libs
 CC=g++
 CC2=gcc
-EXEC= server client 
+EXEC= server client sauvegarde
 
 all: $(EXEC) 
 
@@ -12,8 +12,10 @@ server: $(LIB_FOLDER)/sockdist.o $(LIB_FOLDER)/sock.o serverounet.o
  
 client: $(LIB_FOLDER)/sockdist.o $(LIB_FOLDER)/sock.o clientounet.o
 	$(CC) -o exec/$@ $^ $(CFLAGS)
-	
 
+sauvegarde: 
+	gcc $(FLAGS) $(LIB_FOLDER)/sauvegarde.c -o exec/$@
+  
 		
 #%.o: %.cc $(CC) -c $< $(LDFLAGS)
 
