@@ -15,7 +15,7 @@
 #define CLIENT_OK_DISPO 2
 #define CONTROLEUR_OK 3
 
-struct Client{
+struct Client {
   char message[BUFFER_SIZE];
 	int des_Client;
 	char* name;
@@ -26,7 +26,12 @@ struct Client{
 };
 typedef Client* P_Client;
 
-
+struct data {
+  int descripteur;
+  P_Client* ptr_client_list;
+  int* nb_client;
+};
+typedef data* P_data;
 
 /**
 * Gère l'envoi du rapport PDF à l'employé
@@ -61,6 +66,7 @@ void* th_Recieved_Empl_List(void* param)
 
 pthread_exit(NULL);
 }
+
 
 
 /**
@@ -114,8 +120,6 @@ int isClient(Client client, P_Client listeClientsEntreprise[])
 				status = CONTROLEUR_OK;
 			}
 			else if(verification_demande_rapport(listeClientsEntreprise[i]) )	{
-			// on affecte la propriété 'controller' au controller authentifié
-			    listeClientsEntreprise[i]->controller=true;
 					status = CLIENT_OK_DISPO;	
 			}
 			else {
@@ -130,7 +134,7 @@ int isClient(Client client, P_Client listeClientsEntreprise[])
 return status;
 }
 
-int authentification (int desClient,int nb_Client, P_Client listeClientsEntreprise[])
+int authentification (int desClient,int* nb_client, P_Client listeClientsEntreprise[])
 {
 	int authentifie(0),reception(0),statusClient(0);
 	Client tempCli;
@@ -139,7 +143,9 @@ int authentification (int desClient,int nb_Client, P_Client listeClientsEntrepri
 	if(!reception)
 		perror("Erreur réception read()");
 	else {
-		cout <<"Login reçu : " << tempCli.message << endl;	
+		cout <<"Login reçu : " << tempCli.message << endl;
+		sprintf(tempCli.name,tempCli.message);
+		tempCli.des_Client = desClient;
 		statusClient = isClient(tempCli,listeClientsEntreprise);
 	  
 	  if(statusClient == CLIENT_REFUSE) {
@@ -160,18 +166,57 @@ return authentifie;
 }
 
 
+
+/**
+* Thread lancé dès qu'un client a été accept() par le server. Il va gérer la
+* la partie authentification puis oriente le client.
+**/
+void* th_new_client(void* param)
+{
+  P_data data = (P_data) param;
+  int statusClient = 0;
+  
+  statusClient = authentification(data->descripteur,data->nb_client,
+  data->ptr_client_list);
+  if(statusClient == 0) {
+    close(data->descripteur);
+  }
+  else 
+  {
+    pthread_t idThread;			  		  
+    switch(statusClient) 
+    {
+      // Juste une trace, mais dans ce cas ci, le client sera déconnecté.
+      case CLIENT_OK : cout << "C'est un client !"<< endl; break;			    			    
+      case CLIENT_OK_DISPO : cout << "JC'est un client, rapport dispo !"<< endl; 
+        if(pthread_create(&idThread,NULL,th_Gestion_Rapport_PDF,
+        (void*)data->ptr_client_list[data->nb_client])!= 0){
+          perror("Erreur création thread");
+        }
+        break;			      
+      case CONTROLEUR_OK : cout << "C'est un controleur !"<< endl; break;
+      default : perror("Petit souci switch(statusClient)"); 
+                exit(EXIT_FAILURE);
+    } // End switch
+
+    data->nb_client++; // gestion d'accès concurrent ?
+  }
+  
+pthread_exit(NULL);
+}
+
+
+
 int main(int args,char* argv[]) {
-	int port, desBrClient, DesServer, BRLocal, statusClient;
-	int nb_Client = 0;
+	int port, desCurrentClient, DesServer, localBR, nb_client(0);
 	struct sockaddr_in brCv;
-	socklen_t lgLoc;
+	socklen_t sizeLocalBr;
 	P_Client listeClientsEntreprise[50];
+	P_data data; // création d'un pointeur sur une struct "data"
 	
-	/* Petit test ici */
-  Client clicli;
-  clicli.name ="tintin";
-  listeClientsEntreprise[0] = &clicli;	
-	
+  data->nb_client= &nb_client;
+  data->ptr_client_list = listeClientsEntreprise;
+		
 	if(args == 2) {
 		cout << "N° port saisi : "<< argv[1] << endl;
 		port = atoi(argv[1]);
@@ -186,52 +231,31 @@ int main(int args,char* argv[]) {
 	if(server->good()) {
 		cout << "Server lancé !" << endl;		
 		DesServer = server->getsDesc();
-		BRLocal = server-> getsRetour();
-		lgLoc = sizeof(brCv);
+		localBR = server-> getsRetour();
+		sizeLocalBr = sizeof(brCv);
 	}
 	else {
 		perror("Erreur Sock()");
 		exit(EXIT_FAILURE);
 	}
 	
-/* Création file */
-		if(listen(DesServer,5) == -1)
-		perror("Erreur listen");		
-		
+	if(listen(DesServer,5) == -1)
+	perror("Erreur listen()");
+
 	while(1)
 	{
-	
 /* Acceptation de la connexion du Client */
-		desBrClient = accept(DesServer,(struct sockaddr *)&brCv,&lgLoc);
-		if(desBrClient == -1)
+		desCurrentClient = accept(DesServer,(struct sockaddr *)&brCv,&sizeLocalBr);
+		if(desCurrentClient == -1)
 			perror("Erreur accept ");
 		else {
-			cout << "Nouveau Client accepté" << endl;	
-			statusClient = authentification(desBrClient,nb_Client,listeClientsEntreprise);
-			if(statusClient == 0) {
-				close(desBrClient);
-			}
-			else 
-			{
- 			  pthread_t idThread;			  		  
-			  switch(statusClient) 
-			  {
-			    // Juste une trace, mais dans ce cas ci, le client sera déconnecté.
-			    case CLIENT_OK : cout << "Je suis client !"<< endl; break;			    			    
-			    case CLIENT_OK_DISPO : cout << "Je suis client, rapport dispo !"<< endl; 
-			      if(pthread_create(&idThread,NULL,th_Gestion_Rapport_PDF,
-			      (void*)listeClientsEntreprise[nb_Client])!= 0){
-			        perror("Erreur création thread");
-			      }
-			      break;			      
-			    case CONTROLEUR_OK : cout << "Je suis controleur !"<< endl; break;
-			    default : perror("Petit souci switch(statusClient)"); 
-			              exit(EXIT_FAILURE);
-			              break;
-			  } // End switch
-			  
-			  nb_Client++; 	
-			} // End if (statusClient == 0)
+		  pthread_t idThread; 
+			cout << "Nouveau Client accepté" << endl;
+			data->descripteur = desCurrentClient;
+			if(pthread_create(&idThread,NULL,th_new_client,(void*)data) != 0) {
+        perror("Erreur création th_new_client");
+      }
+      
 		}// End if Client accepté
 	} // End loop
 	

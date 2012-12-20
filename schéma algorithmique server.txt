@@ -1,8 +1,19 @@
-													
+Pour le moment :
+- On considère que la liste des personnes de l'entreprise (employés + controleur) est construite à l'initialisation du server. A l'aide d'un fichier texte local au server.
+
+Dans ce fichier, toute les informations client doivent être saisis excepté :
+'des_clent', 'claimed_report' et 'recieved_report' qui seront respectivement affectés par le server puis par le controleur pour les deux derniers.
+
+Le controleur aura la possibilité de saisir au clavier les noms des employés devant envoyer un rapport ou donnera le chemin accés à un fichier texte contenant ces derniers.
+
+
+
 													acceptClient()
 													
-													Authentification()
-										 + Verification_demande_rapport()
+													th_new_client()
+													
+													authentification()
+										 + verification_demande_rapport()
 																/ \
 							 si controleur   /   \  si employé
 							                /     \  

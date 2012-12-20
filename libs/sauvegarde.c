@@ -10,7 +10,7 @@
 #include <errno.h>
 #include <glib.h>
 #include <time.h>
- #include <locale.h>
+#include <locale.h>
 
 #define TAILLEBUF 100
 #define FICHIERIMAGE "vuillemin.jpg"
@@ -165,12 +165,11 @@ int Ecrit(const char *message, const char *employe) {
 int main(int argc, char *argv[]){
   int fd, res;
   char buff[100];
-
-  Ecrit("plop21", "test");
-  Ecrit("plop5", "test");
-
   
-  fd = OuvreRapport("test");
+  Ecrit("Bloc infos 1", "Employe");
+  Ecrit("Bloc infos 2", "Employe");
+  
+  fd = OuvreRapport("Employe");
 
   return 0;
 } 
