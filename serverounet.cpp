@@ -26,7 +26,7 @@ struct Client {
 	char* password;
 	bool controller;
 	bool claimed_report;
-	bool recieved_report;
+	bool received_report;
 };
 typedef Client* P_Client;
 
@@ -40,44 +40,47 @@ typedef data* P_data;
 /**
 * Gère l'envoi du rapport PDF à l'employé
 **/
-void telechargement_pdf(Client* employee)
+void telechargement_pdf(Client* client)
 {
 /* COTE RECEVEUR 	
 		int taille,octetrecu(0);
+		char file_content[BUFFER_SIZE];
+		FILE* pdf_file = fopen("monRapport.pdf", "wb");
+		
 		recv(DesClient,&taille,sizeof(int),0);
 		
 		while(octetrecu < taille)
 		{
-			octetrecu += recv(DesClient,&taille,sizeof(int),0);
+			octetrecu += recv(DesClient,file_content,sizeof(file_content),0);
+			//fwrite(pdf_file,file_content,);
 		}
-		close(file);
+		close(pdf_file);
 		
 */
-
 	
 	char* pdf_path = "";
 	FILE* pdf_file = fopen(pdf_path, "rb");
-	int taille;
+	int taille = fseek(pdf_file,0,SEEK_END);
 	char file_content[BUFFER_SIZE];
 
 	if (pdf_file != NULL)
 	{
-		send(employee->des_client,&taille, sizeof (int), 0);
+		send(client->des_client,&taille, sizeof (int), 0);
 		
 		while (fgets(file_content, sizeof (file_content),pdf_file) != NULL)
 		{
-    	send(employee->des_client, file_content, sizeof (file_content), 0);
+    	send(client->des_client, file_content, sizeof (file_content), 0);
     }
     
 
     fclose (pdf_file);
+    
   }
   else
   {
   	printf ("Rapport PDF inconnu\n");
 	}
 	
-	  
 }
 
 /**
@@ -110,11 +113,12 @@ void employee_report_to_pdf(Client* employee)
 	    switch((int)request) 
 	    {		   
 		    case ADD_LINES :  cout << "Demande d'ajout de ligne" << endl; break;
-		    case FINISH_REPORT : cout << "Demande de finalisation" << endl; break;		
+		    case FINISH_REPORT : cout << "Demande de finalisation" << endl; 
+		    										 continu = 0; break;		
 		    default : perror("Erreur switch reportToPDF");
 	    }	
 	    
-// 	    TODO	
+// 	    TODO
     }
   } 
   
@@ -136,10 +140,10 @@ pthread_exit(NULL);
 **/
 void * th_employee_management(void* param) 
 {
-  Client* employe = (Client*)param;
+  Client* employee = (Client*)param;
   int reponse = 1;
   
-  cout << "Bonjour "<< employe->name <<" !"<< endl;
+  cout << "Bonjour "<< employee->name <<" !"<< endl;
   while(reponse == 0)
   {
     cout << "Que voulez vous faire ?" << endl;
@@ -150,8 +154,8 @@ void * th_employee_management(void* param)
     
     cin >> reponse;
     switch(reponse) {
-      case 1 : employee_report_to_pdf(employe); break;
-      case 2 : telechargement_pdf(employe); break;
+      case 1 : employee_report_to_pdf(employee); break;
+      case 2 : telechargement_pdf(employee); break;
       case 3 : reponse = 0; break;
       default : cout << "Erreur de saisie, veuillez recommencer" << endl;
     }
