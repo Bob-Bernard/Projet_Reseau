@@ -36,9 +36,9 @@ typedef data* P_data;
 /**
 * Gère l'envoi du rapport PDF à l'employé
 **/
-void telechargement_pdf(Client* client)
+void telechargement_pdf(Client* employe)
 {
-
+   
 }
 
 /**
@@ -53,8 +53,31 @@ bool verification_demande_rapport(Client* employe)
 /**
 * Réception d'un rapport que doit envoyer un employé
 **/
-void reception_rapport_employe(Client* employe)
+void employee_report_to_pdf(Client* employee)
 {
+  cout << "Début saisie rapport par le client "<< employee->name << endl;
+  int continu(1),reception(0);
+  char request;
+
+  while(continu)
+  {
+	  reception = read(employee->des_Client,employee->message,sizeof(employee->message));
+	  if(!reception)
+		  perror("Erreur réception read()");
+	  else {
+	    request = employee->message[0];
+	    cout <<"Employé : "<<  employee->name <<" demande reçue "<< request<<endl;
+	                        
+	    switch((int)request) 
+	    {		   
+		    case ADD_LINES :  break;
+		    case FINISH_REPORT :  break;		
+		    default : perror("Erreur switch reportToPDF");
+	    }	
+	    
+// 	    TODO	
+    }
+  } 
   
 }
 
@@ -72,7 +95,7 @@ pthread_exit(NULL);
 /**
 * Traitement d'une demande d'envoie de rapport d'un employé
 **/
-void * th_Gestion_Rapport_PDF(void* param) 
+void * th_employee_management(void* param) 
 {
   Client* employe = (Client*)param;
   int reponse = 1;
@@ -88,7 +111,7 @@ void * th_Gestion_Rapport_PDF(void* param)
     
     cin >> reponse;
     switch(reponse) {
-      case 1 : reception_rapport_employe(employe); break;
+      case 1 : employee_report_to_pdf(employe); break;
       case 2 : telechargement_pdf(employe); break;
       case 3 : reponse = 0; break;
       default : cout << "Erreur de saisie, veuillez recommencer" << endl;
@@ -101,7 +124,7 @@ pthread_exit(NULL);
 /**
 *
 **/
-void * th_Verif_presence_rapport(void* param) 
+void * th_verif_presence_rapport(void* param) 
 {
 
 	pthread_exit(NULL);
@@ -110,31 +133,30 @@ void * th_Verif_presence_rapport(void* param)
 
 int isClient(Client client, P_Client listeClientsEntreprise[])
 {
-	int status(0),i(0);
+	int status(0),indice(0);
 	
-	while (listeClientsEntreprise[i] != NULL)
+	while (listeClientsEntreprise[indice] != NULL)
 	{
-		if(listeClientsEntreprise[i]->name == client.name) 
+		if(listeClientsEntreprise[indice]->name == client.name) 
 		{
-			if(listeClientsEntreprise[i]->controller == true) {
+			if(listeClientsEntreprise[indice]->controller == true) {
 				status = CONTROLEUR_OK;
 			}
-			else if(verification_demande_rapport(listeClientsEntreprise[i]) )	{
+			else if(verification_demande_rapport(listeClientsEntreprise[indice]) )	{
 					status = CLIENT_OK_DISPO;	
 			}
 			else {
 				status = CLIENT_OK;
 		  }
-      // on affecte le descripteur temporaire à son propritaire autentifié
-		  listeClientsEntreprise[i]->des_Client = client.des_Client;
+		  listeClientsEntreprise[indice]->des_Client = client.des_Client;
 		}
-		i++;
+		indice++;
 		
 	} // end loop
 return status;
 }
 
-int authentification (int desClient,int* nb_client, P_Client listeClientsEntreprise[])
+int authentification (int desClient,int nb_client, P_Client listeClientsEntreprise[])
 {
 	int authentifie(0),reception(0),statusClient(0);
 	Client tempCli;
@@ -176,7 +198,7 @@ void* th_new_client(void* param)
   P_data data = (P_data) param;
   int statusClient = 0;
   
-  statusClient = authentification(data->descripteur,data->nb_client,
+  statusClient = authentification(data->descripteur,*data->nb_client,
   data->ptr_client_list);
   if(statusClient == 0) {
     close(data->descripteur);
@@ -186,18 +208,19 @@ void* th_new_client(void* param)
     pthread_t idThread;			  		  
     switch(statusClient) 
     {
-      // Juste une trace, mais dans ce cas ci, le client sera déconnecté.
       case CLIENT_OK : cout << "C'est un client !"<< endl; break;			    			    
       case CLIENT_OK_DISPO : cout << "JC'est un client, rapport dispo !"<< endl; 
-        if(pthread_create(&idThread,NULL,th_Gestion_Rapport_PDF,
-        (void*)data->ptr_client_list[*data->nb_client])!= 0){
+        if(pthread_create(&idThread,NULL,th_employee_management,
+        (void*)data->ptr_client_list[*data->nb_client])!= 0)  {
           perror("Erreur création thread");
         }
         break;			      
-      case CONTROLEUR_OK : cout << "C'est un controleur !"<< endl; break;
+      case CONTROLEUR_OK : cout << "C'est un controleur !"<< endl; 
+      
+        break;
       default : perror("Petit souci switch(statusClient)"); 
                 exit(EXIT_FAILURE);
-    } // End switch
+    }
 
     data->nb_client++; // gestion d'accès concurrent ?
   }

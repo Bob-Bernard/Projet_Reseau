@@ -20,8 +20,8 @@ Le controleur aura la possibilité de saisir au clavier les noms des employés d
 							               /       \ 
 							              /         \ 
  
-        th_Recieved_Empl_List()     th_Gestion_Rapport_PDF()
-   [liste.txt ou envoi un à un]         -> Reception_rapport_employé()
+        th_recieved_Empl_List()     th_employee_management()
+   [liste.txt ou envoi un à un]         -> employee_report_to_pdf()
 																				-> dl_pdf()
         					|                   
 
