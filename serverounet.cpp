@@ -1,5 +1,5 @@
-#include "libs/employee->des_clientdist.h"
-#include "libs/employee->des_client.h"
+#include "libs/sock.h"
+#include "libs/sockdist.h"
 
 #include <string.h>
 #include <stdio.h>
@@ -7,7 +7,7 @@
 #include <stdlib.h>
 
 #include <sys/types.h>
-#include <sys/employee->des_clientet.h>
+#include <sys/socket.h>
 
 #define BUFFER_SIZE 1024
 
@@ -21,7 +21,7 @@
 
 struct Client {
   char message[BUFFER_SIZE];
-	int des_Client;
+	int des_client;
 	char* name;
 	char* password;
 	bool controller;
@@ -40,7 +40,7 @@ typedef data* P_data;
 /**
 * Gère l'envoi du rapport PDF à l'employé
 **/
-void telechargement_pdf(Client* employe)
+void telechargement_pdf(Client* employee)
 {
 /* COTE RECEVEUR 	
 		int taille,octetrecu(0);
@@ -100,7 +100,7 @@ void employee_report_to_pdf(Client* employee)
 
   while(continu)
   {
-	  reception = read(employee->des_Client,employee->message,sizeof(employee->message));
+	  reception = read(employee->des_client,employee->message,sizeof(employee->message));
 	  if(!reception)
 		  perror("Erreur réception read()");
 	  else {
@@ -187,7 +187,7 @@ int isClient(Client client, P_Client listeClientsEntreprise[])
 			else {
 				status = CLIENT_OK;
 		  }
-		  listeClientsEntreprise[indice]->des_Client = client.des_Client;
+		  listeClientsEntreprise[indice]->des_client = client.des_client;
 		}
 		indice++;
 		
@@ -206,7 +206,7 @@ int authentification (int desClient,int nb_client, P_Client listeClientsEntrepri
 	else {
 		cout <<"Login reçu : " << tempCli.message << endl;
 		sprintf(tempCli.name,tempCli.message);
-		tempCli.des_Client = desClient;
+		tempCli.des_client = desClient;
 		statusClient = isClient(tempCli,listeClientsEntreprise);
 	  
 	  if(statusClient == CLIENT_REFUSE) {
@@ -271,8 +271,8 @@ pthread_exit(NULL);
 
 int main(int args,char* argv[]) {
 	int port, desCurrentClient, DesServer, localBR, nb_client(0);
-	struct employee->des_clientaddr_in brCv;
-	employee->des_clientlen_t sizeLocalBr;
+	struct sockaddr_in brCv;
+	socklen_t sizeLocalBr;
 	P_Client listeClientsEntreprise[50];
 	P_data data; // création d'un pointeur sur une struct "data"
 	
@@ -289,7 +289,7 @@ int main(int args,char* argv[]) {
 	}
 	
 	/* Création de la BR Publique */
-	employee->des_client* server = new employee->des_client(employee->des_client_STREAM,(short)htons(port),0);
+	Sock* server = new Sock(SOCK_STREAM,(short)htons(port),0);
 	if(server->good()) {
 		cout << "Server lancé !" << endl;		
 		DesServer = server->getsDesc();
@@ -307,7 +307,7 @@ int main(int args,char* argv[]) {
 	while(1)
 	{
 /* Acceptation de la connexion du Client */
-		desCurrentClient = accept(DesServer,(struct employee->des_clientaddr *)&brCv,&sizeLocalBr);
+		desCurrentClient = accept(DesServer,(struct sockaddr *)&brCv,&sizeLocalBr);
 		if(desCurrentClient == -1)
 			perror("Erreur accept ");
 		else {
