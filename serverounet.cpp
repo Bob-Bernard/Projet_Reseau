@@ -10,10 +10,14 @@
 #include <sys/socket.h>
 
 #define BUFFER_SIZE 1024
+
 #define CLIENT_REFUSE 0
 #define CLIENT_OK 1
 #define CLIENT_OK_DISPO 2
 #define CONTROLEUR_OK 3
+
+#define ADD_LINES 1
+#define FINISH_REPORT 2
 
 struct Client {
   char message[BUFFER_SIZE];
@@ -38,7 +42,10 @@ typedef data* P_data;
 **/
 void telechargement_pdf(Client* employe)
 {
-   
+	
+	
+	
+	  
 }
 
 /**
@@ -70,8 +77,8 @@ void employee_report_to_pdf(Client* employee)
 	                        
 	    switch((int)request) 
 	    {		   
-		    case ADD_LINES :  break;
-		    case FINISH_REPORT :  break;		
+		    case ADD_LINES :  cout << "Demande d'ajout de ligne" << endl; break;
+		    case FINISH_REPORT : cout << "Demande de finalisation" << endl; break;		
 		    default : perror("Erreur switch reportToPDF");
 	    }	
 	    
@@ -275,6 +282,7 @@ int main(int args,char* argv[]) {
 		  pthread_t idThread; 
 			cout << "Nouveau Client accepté" << endl;
 			data->descripteur = desCurrentClient;
+			
 			if(pthread_create(&idThread,NULL,th_new_client,(void*)data) != 0) {
         perror("Erreur création th_new_client");
       }
