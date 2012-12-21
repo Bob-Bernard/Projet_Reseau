@@ -1,5 +1,5 @@
-#include "libs/sockdist.h"
-#include "libs/sock.h"
+#include "libs/employee->des_clientdist.h"
+#include "libs/employee->des_client.h"
 
 #include <string.h>
 #include <stdio.h>
@@ -7,7 +7,7 @@
 #include <stdlib.h>
 
 #include <sys/types.h>
-#include <sys/socket.h>
+#include <sys/employee->des_clientet.h>
 
 #define BUFFER_SIZE 1024
 
@@ -42,8 +42,40 @@ typedef data* P_data;
 **/
 void telechargement_pdf(Client* employe)
 {
+/* COTE RECEVEUR 	
+		int taille,octetrecu(0);
+		recv(DesClient,&taille,sizeof(int),0);
+		
+		while(octetrecu < taille)
+		{
+			octetrecu += recv(DesClient,&taille,sizeof(int),0);
+		}
+		close(file);
+		
+*/
+
 	
-	
+	char* pdf_path = "";
+	FILE* pdf_file = fopen(pdf_path, "rb");
+	int taille;
+	char file_content[BUFFER_SIZE];
+
+	if (pdf_file != NULL)
+	{
+		send(employee->des_client,&taille, sizeof (int), 0);
+		
+		while (fgets(file_content, sizeof (file_content),pdf_file) != NULL)
+		{
+    	send(employee->des_client, file_content, sizeof (file_content), 0);
+    }
+    
+
+    fclose (pdf_file);
+  }
+  else
+  {
+  	printf ("Rapport PDF inconnu\n");
+	}
 	
 	  
 }
@@ -239,8 +271,8 @@ pthread_exit(NULL);
 
 int main(int args,char* argv[]) {
 	int port, desCurrentClient, DesServer, localBR, nb_client(0);
-	struct sockaddr_in brCv;
-	socklen_t sizeLocalBr;
+	struct employee->des_clientaddr_in brCv;
+	employee->des_clientlen_t sizeLocalBr;
 	P_Client listeClientsEntreprise[50];
 	P_data data; // création d'un pointeur sur une struct "data"
 	
@@ -257,7 +289,7 @@ int main(int args,char* argv[]) {
 	}
 	
 	/* Création de la BR Publique */
-	Sock* server = new Sock(SOCK_STREAM,(short)htons(port),0);
+	employee->des_client* server = new employee->des_client(employee->des_client_STREAM,(short)htons(port),0);
 	if(server->good()) {
 		cout << "Server lancé !" << endl;		
 		DesServer = server->getsDesc();
@@ -265,7 +297,7 @@ int main(int args,char* argv[]) {
 		sizeLocalBr = sizeof(brCv);
 	}
 	else {
-		perror("Erreur Sock()");
+		perror("Erreur employee->des_client()");
 		exit(EXIT_FAILURE);
 	}
 	
@@ -275,7 +307,7 @@ int main(int args,char* argv[]) {
 	while(1)
 	{
 /* Acceptation de la connexion du Client */
-		desCurrentClient = accept(DesServer,(struct sockaddr *)&brCv,&sizeLocalBr);
+		desCurrentClient = accept(DesServer,(struct employee->des_clientaddr *)&brCv,&sizeLocalBr);
 		if(desCurrentClient == -1)
 			perror("Erreur accept ");
 		else {
@@ -290,7 +322,7 @@ int main(int args,char* argv[]) {
 		}// End if Client accepté
 	} // End loop
 	
-/* Fermeture socket server */
+/* Fermeture employee->des_clientet server */
 	close(DesServer);
 
 return EXIT_SUCCESS;
