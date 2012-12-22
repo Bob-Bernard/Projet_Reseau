@@ -52,22 +52,24 @@ if(connect(DesClient,(struct sockaddr *)BRDist,lgbrSrv) == -1) {
 		int taille(0),octetrecu(0);
 		char file_content[1024];
 		FILE* pdf_file = fopen("monRapport.pdf", "wb");
+		int lu;
 		
 		if(pdf_file != NULL) {
 		
-		recv(DesClient,&taille,sizeof(int),0);
-		cout << "taille : " << taille << endl;
+		  recv(DesClient,&taille,sizeof(int),0);
+		  cout << "taille : " << taille << endl;
+		  if(taille == 0) { return 1; }
 		
-		while(octetrecu < taille)
-		{	
-			int lu = recv(DesClient,file_content,sizeof(file_content),0);
-			octetrecu += lu;
-			fwrite(file_content,lu,sizeof(file_content),pdf_file);
+		  while(octetrecu < taille)
+		  {	
+			  lu = recv(DesClient,file_content,sizeof(file_content),0);
+			  octetrecu += lu;
+			  fwrite(file_content,lu,sizeof(file_content),pdf_file);
 			
-			cout << "Octet lu : "<< lu <<  "  Octet recu " << octetrecu << endl;
-		}
-		
-		fclose(pdf_file);
+			  cout << "Octet lu : "<< lu <<  "  Octet recu " << octetrecu << endl;
+		  }
+		  cout << "Fichier reçu !" << endl;
+		  fclose(pdf_file);
 	
 		}
 		else { cout << "pdf inconnu" << endl;}

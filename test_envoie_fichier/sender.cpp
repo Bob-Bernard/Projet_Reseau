@@ -43,12 +43,14 @@ int main(int args,char* argv[]) {
 
 	desCurrentClient = accept(DesServer,(struct sockaddr *)&brCv,&sizeLocalBr);
 	if(desCurrentClient == -1)
-		perror("Erreur accept ");
+		perror("   accept ");
 
 	cout << "test" << endl;
 	int taille(0);
 	const char* pdf_path = "sujet.pdf";
 	FILE* pdf_file = fopen(pdf_path, "rb");
+	int sent = 0;
+	int read = -1;
 	
 	char file_content[1024];
 
@@ -57,22 +59,33 @@ int main(int args,char* argv[]) {
 		cout << "Fichier ouvert !" << endl;
 		fseek(pdf_file,0,SEEK_END);
 		taille = ftell(pdf_file);
-		fseek(pdf_file,0,SEEK_SET);
+		rewind(pdf_file);
 		
 		cout << "Taille : " << taille << endl;
 		send(desCurrentClient,&taille, sizeof(int), 0);
-		
-		while (fgets(file_content, sizeof (file_content),pdf_file) != NULL)
+		  
+		while(read != 0)
 		{
+		  read = fread(file_content,1,sizeof(file_content),pdf_file);		  
     	send(desCurrentClient, file_content, sizeof (file_content),0);
+    	cout << "Envoyé : " << read << endl;
     }
     
-    fclose (pdf_file);    
+    //cout << " Envoyé total : " << read << endl;
+    cout << "Fichier envoyé !" << endl;
+    if(fclose (pdf_file) != 0) {
+      perror("Erreur fclose()");
+    }
+    else {
+      cout << "fichier fermé" << endl;
+    }
   }
   else
   {
   	cout << "Rapport PDF inconnu" << endl;
 	}
+	
+	cout << "Close() " << endl;
 	
 	close(desCurrentClient);
 	close(DesServer);

@@ -3,21 +3,21 @@ FLAGS=`pkg-config --cflags --libs gtk+-2.0`
 LIB_FOLDER=libs
 CC=g++
 CC2=gcc
-EXEC= server client sauvegarde
+EXEC= sender receiver sauvegarde
 
 all: $(EXEC) 
 
-server: $(LIB_FOLDER)/sockdist.o $(LIB_FOLDER)/sock.o sender.o
+sender: $(LIB_FOLDER)/sockdist.o $(LIB_FOLDER)/sock.o sender.o
 	$(CC) -o exec/$@ $^ $(CFLAGS)
  
-client: $(LIB_FOLDER)/sockdist.o $(LIB_FOLDER)/sock.o receiver.o
+receiver: $(LIB_FOLDER)/sockdist.o $(LIB_FOLDER)/sock.o receiver.o
 	$(CC) -o exec/$@ $^ $(CFLAGS)
 
 sauvegarde: 
 	gcc $(FLAGS) $(LIB_FOLDER)/sauvegarde.c -o exec/$@
   
 		
-%.o: %.cc $(CC) -c $< $(LDFLAGS)
+#%.o: %.cc $(CC) -c $< $(LDFLAGS)
 
 .PHONY: clean mrproper
 
