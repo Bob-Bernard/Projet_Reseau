@@ -69,7 +69,7 @@ int file_size(0),read(0),received_bytes(0);
 */
 	
   int file_size(0),read(-1);
-	const char* pdf_path = strcat(client->name,".pdf";
+	const char* pdf_path = strcat(client->name,".pdf");
 	FILE* pdf_file = fopen(pdf_path, "rb");
 	char file_content[BUFFER_SIZE];
 
@@ -79,12 +79,12 @@ int file_size(0),read(0),received_bytes(0);
 		fseek(pdf_file,0,SEEK_END);
 		file_size = ftell(pdf_file);
 		rewind(pdf_file);		
-		send(desCurrentClient,&file_size,sizeof(int),0);
+		send(client->des_client,&file_size,sizeof(int),0);
 		  
 		while(read != 0)
 		{
 		  read = fread(file_content,sizeof(char),BUFFER_SIZE,pdf_file);		  
-    	send(desCurrentClient, file_content,read,0);
+    	send(client->des_client, file_content,read,0);
     }
     
     cout << "Rapport envoyé !" << endl;
