@@ -40,7 +40,7 @@ typedef data* P_data;
 /**
 * Gère l'envoi du rapport PDF à l'employé
 **/
-void telechargement_pdf(Client* client)
+void download_PDF(Client* client)
 {
 /* COTE RECEVEUR 	
 int file_size(0),read(0),received_bytes(0);
@@ -84,7 +84,7 @@ int file_size(0),read(0),received_bytes(0);
 		while(read != 0)
 		{
 		  read = fread(file_content,sizeof(char),BUFFER_SIZE,pdf_file);		  
-    	send(client->des_client, file_content,read,0);
+    	send(client->des_client,file_content,read,0);
     }
     
     cout << "Rapport envoyé !" << endl;
@@ -170,7 +170,7 @@ void * th_employee_management(void* param)
     cin >> reponse;
     switch(reponse) {
       case 1 : employee_report_to_pdf(employee); break;
-      case 2 : telechargement_pdf(employee); break;
+      case 2 : download_PDF(employee); break;
       case 3 : reponse = 0; break;
       default : cout << "Erreur de saisie, veuillez recommencer" << endl;
     }
