@@ -43,43 +43,58 @@ typedef data* P_data;
 void telechargement_pdf(Client* client)
 {
 /* COTE RECEVEUR 	
-		int taille,octetrecu(0);
+int file_size(0),read(0),received_bytes(0);
 		char file_content[BUFFER_SIZE];
 		FILE* pdf_file = fopen("monRapport.pdf", "wb");
 		
-		recv(DesClient,&taille,sizeof(int),0);
-		
-		while(octetrecu < taille)
+		if(pdf_file != NULL) 
 		{
-			octetrecu += recv(DesClient,file_content,sizeof(file_content),0);
-			//fwrite(pdf_file,file_content,);
-		}
-		close(pdf_file);
+		  recv(DesClient,&file_size,sizeof(int),0);
+		  if(file_size == 0) { 
+		   perror("Erreur reception taille fichier"); 
+		  }
 		
+		  while(received_bytes < file_size)
+		  {	
+			  read = recv(DesClient,file_content,sizeof(file_content),0);
+			  fwrite(file_content,sizeof(char),read,pdf_file);
+			  received_bytes += read;
+		  }
+		  cout << "Rapport reçu !" << endl;
+		  fclose(pdf_file);	
+		}
+		else { 
+		  cout << "Fichier PDF inconnu" << endl;
+		}		
 */
 	
-	char* pdf_path = "";
+  int file_size(0),read(-1);
+	const char* pdf_path = strcat(client->name,".pdf";
 	FILE* pdf_file = fopen(pdf_path, "rb");
-	int taille = fseek(pdf_file,0,SEEK_END);
 	char file_content[BUFFER_SIZE];
 
 	if (pdf_file != NULL)
 	{
-		send(client->des_client,&taille, sizeof (int), 0);
-		
-		while (fgets(file_content, sizeof (file_content),pdf_file) != NULL)
+		cout << "Rapport ouvert !" << endl;
+		fseek(pdf_file,0,SEEK_END);
+		file_size = ftell(pdf_file);
+		rewind(pdf_file);		
+		send(desCurrentClient,&file_size,sizeof(int),0);
+		  
+		while(read != 0)
 		{
-    	send(client->des_client, file_content, sizeof (file_content), 0);
+		  read = fread(file_content,sizeof(char),BUFFER_SIZE,pdf_file);		  
+    	send(desCurrentClient, file_content,read,0);
     }
     
-
-    fclose (pdf_file);
-    
+    cout << "Rapport envoyé !" << endl;
+    if(fclose (pdf_file) != 0) {
+      perror("Erreur fclose()");
+    }
   }
-  else
-  {
-  	printf ("Rapport PDF inconnu\n");
-	}
+  else {
+  	perror("Rapport PDF inconnu");
+	}	
 	
 }
 
