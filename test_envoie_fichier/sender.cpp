@@ -48,10 +48,9 @@ int main(int args,char* argv[]) {
 	cout << "test" << endl;
 	int taille(0);
 	const char* pdf_path = "sujet.pdf";
-	FILE* pdf_file = fopen(pdf_path, "rb");
+	FILE* pdf_file = fopen("sujet.pdf", "rb");
 	int sent = 0;
 	int read = -1;
-	
 	char file_content[1024];
 
 	if (pdf_file != NULL)
@@ -62,23 +61,20 @@ int main(int args,char* argv[]) {
 		rewind(pdf_file);
 		
 		cout << "Taille : " << taille << endl;
-		send(desCurrentClient,&taille, sizeof(int), 0);
+		send(desCurrentClient,&taille,sizeof(int),0);
 		  
 		while(read != 0)
 		{
-		  read = fread(file_content,1,sizeof(file_content),pdf_file);		  
-    	send(desCurrentClient, file_content, sizeof (file_content),0);
+		  read = fread(file_content,sizeof(char),1024,pdf_file);		  
+    	send(desCurrentClient, file_content,read,0);
     	cout << "Envoyé : " << read << endl;
     }
     
-    //cout << " Envoyé total : " << read << endl;
     cout << "Fichier envoyé !" << endl;
     if(fclose (pdf_file) != 0) {
       perror("Erreur fclose()");
     }
-    else {
-      cout << "fichier fermé" << endl;
-    }
+    else { cout << "fichier fermé" << endl; }
   }
   else
   {

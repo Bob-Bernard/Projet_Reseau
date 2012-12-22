@@ -64,7 +64,7 @@ if(connect(DesClient,(struct sockaddr *)BRDist,lgbrSrv) == -1) {
 		  {	
 			  lu = recv(DesClient,file_content,sizeof(file_content),0);
 			  octetrecu += lu;
-			  fwrite(file_content,lu,sizeof(file_content),pdf_file);
+			  fwrite(file_content,sizeof(char),lu,pdf_file);
 			
 			  cout << "Octet lu : "<< lu <<  "  Octet recu " << octetrecu << endl;
 		  }
