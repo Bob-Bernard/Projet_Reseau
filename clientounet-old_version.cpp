@@ -1,13 +1,30 @@
-#include "libs/sock.h"
 #include "libs/sockdist.h"
-
+#include "libs/sock.h"
 #include <string.h>
 #include <stdio.h>
 #include <iostream>
 #include <stdlib.h>
-
 #include <sys/types.h>
 #include <sys/socket.h>
+#define BUFSIZE 1024
+
+typedef struct {
+	int des_client;
+	char * mdp;
+}employe;
+
+	
+
+
+char authentification ()
+{
+	char * mdp;
+	cout<<"taper votre mot de passe:"<<endl;
+	cin>>mdp;
+	cout<<mdp<<endl;
+	return *mdp;
+}
+
 
 int main (int args, char* argv[] ) {
 	
@@ -36,42 +53,50 @@ int main (int args, char* argv[] ) {
 	struct sockaddr_in *BRDist;
 	BRDist = server ->getAdrDist(); // Récupération de sockaddr_in 
 	int lgbrSrv = server->getsLen();
-
+	//char test=authentification();
+	//cout<<test<<endl;
+		
+	char TamponExp[BUFSIZE]="";
+	char TamponRec[BUFSIZE]="";
+	
 	
 	//=================================Protocole envoie==============================================
 
-if(connect(DesClient,(struct sockaddr *)BRDist,lgbrSrv) == -1) {
+if(connect(DesClient,(struct sockaddr *)BRDist,lgbrSrv) == -1)
+	{
 		perror("Erreur de connexion");
 		exit(EXIT_SUCCESS);
 	}
 	else {
 		cout << "Connexion acceptée" << endl;
 	}
+		
+	while(1)
+	{	
+		cout << "Veuillez saisir un message : ";
+		cin.getline(TamponExp,sizeof(TamponExp));
 
-
-		int taille(0),octetrecu(0);
-		char file_content[1024];
-		FILE* pdf_file = fopen("monRapport.pdf", "wb");
-		
-		if(pdf_file != NULL) {
-		
-		recv(DesClient,&taille,sizeof(int),0);
-		cout << "taille : " << taille << endl;
-		
-		while(octetrecu < taille)
-		{	
-			int lu = recv(DesClient,file_content,sizeof(file_content),0);
-			octetrecu += lu;
-			fwrite(file_content,lu,sizeof(file_content),pdf_file);
+/*Envoie d'un message au server */
+		if(write(DesClient,TamponExp,sizeof(TamponExp))==-1)
+		{
+			perror("Erreur d'envoie");
+		}
+		else {
+			cout << "Message envoyé ! "<< endl << "Attente d'une réponse du server..." << endl;
+		}
 			
-			cout << "Octet lu : "<< lu <<  "  Octet recu " << octetrecu << endl;
-		}
-		
-		fclose(pdf_file);
-	
-		}
-		else { cout << "pdf inconnu" << endl;}
 
-close(DesClient);
-return 1;
+/* Reception message du server */
+		if(read(DesClient,TamponRec,sizeof(TamponRec))==-1)
+		{
+			perror("Erreur réception");
+		}
+		else {
+			strcat(TamponRec,"\0");
+			cout << "Réponse server : " << TamponRec << endl << endl;			
+		}
+	} // fin while
+
+	close(DesClient);
+
 }
