@@ -40,7 +40,7 @@ typedef data* P_data;
 /**
 * Gère l'envoi du rapport PDF à l'employé
 **/
-void download_PDF(Client* client)
+bool download_PDF(Client* client)
 {
 /* COTE RECEVEUR 	
 int file_size(0),read(0),received_bytes(0);
@@ -69,6 +69,7 @@ int file_size(0),read(0),received_bytes(0);
 */
 	
   int file_size(0),read(-1);
+  bool file_sent = false;
 	const char* pdf_path = strcat(client->name,".pdf");
 	FILE* pdf_file = fopen(pdf_path, "rb");
 	char file_content[BUFFER_SIZE];
@@ -91,11 +92,13 @@ int file_size(0),read(0),received_bytes(0);
     if(fclose (pdf_file) != 0) {
       perror("Erreur fclose()");
     }
+    file_sent = true;
   }
   else {
   	perror("Rapport PDF inconnu");
-	}	
-	
+	}
+
+return file_sent;	
 }
 
 /**
@@ -156,10 +159,10 @@ pthread_exit(NULL);
 void * th_employee_management(void* param) 
 {
   Client* employee = (Client*)param;
-  int reponse = 1;
+  int continu = 1;
   
   cout << "Bonjour "<< employee->name <<" !"<< endl;
-  while(reponse == 0)
+  while(continu)
   {
     cout << "Que voulez vous faire ?" << endl;
     cout << "1 : Saisir un rapport."<< endl;
@@ -167,11 +170,11 @@ void * th_employee_management(void* param)
     cout << "3 : Quitter" << endl;    
     cout << "Tappez le chiffre correspondant à votre demande";
     
-    cin >> reponse;
-    switch(reponse) {
+    cin >> continu;
+    switch(continu) {
       case 1 : employee_report_to_pdf(employee); break;
       case 2 : download_PDF(employee); break;
-      case 3 : reponse = 0; break;
+      case 3 : continu = 0; break;
       default : cout << "Erreur de saisie, veuillez recommencer" << endl;
     }
   }  
