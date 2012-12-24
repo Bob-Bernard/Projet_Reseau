@@ -1,7 +1,8 @@
 #include "libs/sockdist.h"
 #include "libs/sock.h"
 
-#include <string.h>
+#include <string>
+#include <cstring>
 #include <stdio.h>
 #include <iostream>
 #include <stdlib.h>
@@ -24,22 +25,29 @@ struct Client {
 	bool claimed_report;
 	bool received_report;
 };
+typedef Client* client_t;
+
+
+
+
 
 /**
 * Retourne le status du client après demande d'authentification au server
 **/
-int authentification (Client* client)
+int authentification (client_t client)
 {
-  int statusClient;
-  char * mdp;
-  char* name;
-  
-	cout<<"Entrez votre nom : "<<endl;
-	cin>>name;
-  if(send(client->des_client,client->message,sizeof(client->message),0) == -1) {
+  int statusClient(0);
+  char name[50];
+
+	cout<<"Entrez votre nom : ";
+	cin >> name;
+	
+  if(send(client->des_client,name,sizeof(name),0) == -1) {
     perror("Erreur envoi nom client");
   }
-	
+  recv(client->des_client,&statusClient,sizeof(int),0);
+
+  
 return statusClient;
 }
 
@@ -64,7 +72,7 @@ int main (int args, char* argv[] ) {
 	int port,BRLocal,lgbrSrv,connected(0),statusClient(-1);
 	socklen_t* lgLoc;
 	struct sockaddr_in *BRDist;
-  Client* client;	
+  client_t client = (client_t) malloc(sizeof(client_t));
 	
 	if(args == 1)
 	{
@@ -95,6 +103,7 @@ int main (int args, char* argv[] ) {
   else {
     cout << "Connecté au server !" << endl;
     statusClient = authentification(client);
+    cout << "test affection client->name : " << client->name << endl;
     switch(statusClient) 
     {
       case CLIENT_REFUSE : cout << "Identifiants incorrects !" << endl; 
