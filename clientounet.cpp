@@ -10,6 +10,11 @@
 
 #define BUFFER_SIZE 1024
 
+#define CLIENT_REFUSE 0
+#define CLIENT_OK 1
+#define CLIENT_OK_DISPO 2
+#define CONTROLEUR_OK 3
+
 struct Client {
   char message[BUFFER_SIZE];
 	int des_client;
@@ -20,14 +25,24 @@ struct Client {
 	bool received_report;
 };
 
-char authentification ()
+/**
+* Retourne le status du client après demande d'authentification au server
+**/
+int authentification (Client* client)
 {
-	char * mdp;
+  int statusClient;
+  char * mdp;
+  char* name;
+  
 	cout<<"taper votre mot de passe:"<<endl;
 	cin>>mdp;
 	cout<<mdp<<endl;
 	return *mdp;
+	
+return statusClient;
 }
+
+
 
 
 
@@ -35,7 +50,7 @@ char authentification ()
 int main (int args, char* argv[] ) {
 	
 	char hote[12];
-	int port,DesClient,BRLocal,lgbrSrv,connected(0);
+	int port,BRLocal,lgbrSrv,connected(0),statusClient(-1);
 	socklen_t* lgLoc;
 	struct sockaddr_in *BRDist;
   Client* client;	
@@ -54,26 +69,37 @@ int main (int args, char* argv[] ) {
 	
 	//===================Description BR local =============================================
 	Sock* client_socket = new Sock(SOCK_STREAM,31469,0);
-	DesClient = client_socket->getsDesc();
+	client->des_client = client_socket->getsDesc();
 	BRLocal = client_socket-> getsRetour();
-	SockDist* server = new SockDist(hote,(short)htons(port));
-	BRDist = server ->getAdrDist(); // Récupération de sockaddr_in 
-	lgbrSrv = server->getsLen();	
+	SockDist* server_socket = new SockDist(hote,(short)htons(port));
+	BRDist = server_socket->getAdrDist(); // Récupération de sockaddr_in 
+	lgbrSrv = server_socket->getsLen();	
 	
 	//=================================Protocole envoie==============================================
 
   cout << "Connexion au server en cours..." << endl;
-  if(connected = connect(DesClient,(struct sockaddr *)BRDist,lgbrSrv) == -1) {
+  if(connect(client->des_client,(struct sockaddr *)BRDist,lgbrSrv) == -1) {
     perror("Erreur de connexion");
   }
   else {
-    cout << "Connecté !" << endl;
+    cout << "Connecté au server !" << endl;
+    statusClient = authentification(client);
+    switch(statusClient) 
+    {
+      case CLIENT_REFUSE : cout << "Identifiants incorrects !" << endl; break;
+      case CLIENT_OK : cout << "Vous êtes connecté ! ";
+                       cout << "Aucun rapport demandé." << endl;
+                       break;
+      case CLIENT_OK_DISPO : break;
+      case CONTROLEUR_OK : break;
+      default : cerr << "Switch error after authentification()"<< endl;
+    }
     
 	}
 		
 
 
-	close(DesClient);
+	close(client->des_client);
 
 return EXIT_SUCCESS;
 }
