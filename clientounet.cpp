@@ -43,8 +43,18 @@ return statusClient;
 }
 
 
-
-
+/**
+* Déconnecte un client
+**/
+void disconnection(Client* client)
+{
+  if(close(client->des_client) == -1) {
+    perror("Erreur déconnexion");
+  }
+  else {
+    cout << "Déconnexion terminée." << endl;
+  }
+}
 
 
 int main (int args, char* argv[] ) {
@@ -86,20 +96,26 @@ int main (int args, char* argv[] ) {
     statusClient = authentification(client);
     switch(statusClient) 
     {
-      case CLIENT_REFUSE : cout << "Identifiants incorrects !" << endl; break;
+      case CLIENT_REFUSE : cout << "Identifiants incorrects !" << endl; 
+                           disconnection(client);
+                           break;
       case CLIENT_OK : cout << "Vous êtes connecté ! ";
                        cout << "Aucun rapport demandé." << endl;
+                       cout << "Vous allez être déconnecté" << endl;
+                       disconnection(client);
                        break;
-      case CLIENT_OK_DISPO : break;
-      case CONTROLEUR_OK : break;
+      case CLIENT_OK_DISPO : cout << "Vous êtes connecté !";
+                             cout << "Un rapport vous ai demandé"<< endl;
+                             // lancement fonction client
+                             break;
+      case CONTROLEUR_OK : cout << "Vous êtes connecté en tant que controleur" << endl;
+                           // lancement fonction controleur
+                           break;
       default : cerr << "Switch error after authentification()"<< endl;
+                disconnection(client);
     }
     
 	}
-		
-
-
-	close(client->des_client);
 
 return EXIT_SUCCESS;
 }
