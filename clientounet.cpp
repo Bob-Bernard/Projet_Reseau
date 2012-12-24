@@ -38,9 +38,7 @@ int main (int args, char* argv[] ) {
 	int port,DesClient,BRLocal,lgbrSrv,connected(0);
 	socklen_t* lgLoc;
 	struct sockaddr_in *BRDist;
-  Client* client;
-  p
-	
+  Client* client;	
 	
 	if(args == 1)
 	{
