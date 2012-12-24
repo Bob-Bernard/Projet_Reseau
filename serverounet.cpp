@@ -29,13 +29,15 @@ struct Client {
 	bool received_report;
 };
 typedef Client* P_Client;
+typedef Client* client_t;
 
 struct data {
   int descripteur;
   P_Client* ptr_client_list;
   int* nb_client;
 };
-typedef data* P_data;
+//typedef data* P_data;
+typedef data* data_t;
 
 /**
 * Gère l'envoi du rapport PDF à l'employé
@@ -100,6 +102,20 @@ int file_size(0),read(0),received_bytes(0);
 
 return file_sent;	
 }
+
+/**
+* Déconnecte un client
+**/
+void disconnection(Client* client)
+{
+  if(close(client->des_client) == -1) {
+    perror("Erreur déconnexion");
+  }
+  else {
+    cout << "Déconnexion terminée." << endl;
+  }
+}
+
 
 /**
 * Retourne vrai si l'employé donné en argument doit envoyer un rapport
@@ -219,10 +235,11 @@ return status;
 
 int authentification (int desClient,int nb_client, P_Client listeClientsEntreprise[])
 {
-	int authentifie(0),reception(0),statusClient(0);
+	int authentified(0),reception(0),statusClient(0);
 	Client tempCli;
-
-	reception = read(desClient,tempCli.message,sizeof(tempCli.message));
+  
+  cout << "Attente login client... "<< endl;
+	reception = recv(desClient,tempCli.message,sizeof(tempCli.message),0);
 	if(!reception)
 		perror("Erreur réception read()");
 	else {
@@ -232,20 +249,20 @@ int authentification (int desClient,int nb_client, P_Client listeClientsEntrepri
 		statusClient = isClient(tempCli,listeClientsEntreprise);
 	  
 	  if(statusClient == CLIENT_REFUSE) {
-	    authentifie = CLIENT_REFUSE;
+	    authentified = CLIENT_REFUSE;
 	  }
 	  else {                        
 		  switch(statusClient) 
 		  {		   
-			  case CLIENT_OK : authentifie = CLIENT_OK; break;
-			  case CLIENT_OK_DISPO : authentifie = CLIENT_OK_DISPO; break;
-			  case CONTROLEUR_OK : authentifie = CONTROLEUR_OK; break;		
+			  case CLIENT_OK : authentified = CLIENT_OK; break;
+			  case CLIENT_OK_DISPO : authentified = CLIENT_OK_DISPO; break;
+			  case CONTROLEUR_OK : authentified = CONTROLEUR_OK; break;		
 			  default : perror("Erreur switch statusClient");
 		  }		
 	  } // End if (statusClient == ...)
 	} // End if(reception > 0)
 	
-return authentifie;
+return authentified;
 }
 
 
@@ -256,37 +273,37 @@ return authentifie;
 **/
 void* th_new_client(void* param)
 {
-  P_data data = (P_data) param;
-  int statusClient = 0;
-  
-  statusClient = authentification(data->descripteur,*data->nb_client,
-  data->ptr_client_list);
-  if(statusClient == 0) {
-    close(data->descripteur);
-  }
-  else 
-  {
-    pthread_t idThread;			  		  
-    switch(statusClient) 
-    {
-      case CLIENT_OK : cout << "C'est un client !"<< endl; break;			    			    
-      case CLIENT_OK_DISPO : cout << "JC'est un client, rapport dispo !"<< endl; 
-        if(pthread_create(&idThread,NULL,th_employee_management,
-        (void*)data->ptr_client_list[*data->nb_client])!= 0)  {
-          perror("Erreur création thread");
-        }
-        break;			      
-      case CONTROLEUR_OK : cout << "C'est un controleur !"<< endl; 
-      
-        break;
-      default : perror("Petit souci switch(statusClient)"); 
-                exit(EXIT_FAILURE);
-    }
+//  P_data data = (P_data) param;
+//  int statusClient = 0;
+//  
+//  statusClient = authentification(data->descripteur,*data->nb_client,
+//  data->ptr_client_list);
+//  if(statusClient == 0) {
+//    close(data->descripteur);
+//  }
+//  else 
+//  {
+//    pthread_t idThread;			  		  
+//    switch(statusClient) 
+//    {
+//      case CLIENT_OK : cout << "C'est un client !"<< endl; break;			    			    
+//      case CLIENT_OK_DISPO : cout << "JC'est un client, rapport dispo !"<< endl; 
+//        if(pthread_create(&idThread,NULL,th_employee_management,
+//        (void*)data->ptr_client_list[*data->nb_client])!= 0)  {
+//          perror("Erreur création thread");
+//        }
+//        break;			      
+//      case CONTROLEUR_OK : cout << "C'est un controleur !"<< endl; 
+//      
+//        break;
+//      default : perror("Petit souci switch(statusClient)"); 
+//                exit(EXIT_FAILURE);
+//    }
 
-    data->nb_client++; // gestion d'accès concurrent ?
-  }
-  
-pthread_exit(NULL);
+//    data->nb_client++; // gestion d'accès concurrent ?
+//  }
+//  
+  pthread_exit(NULL);
 }
 
 
@@ -295,12 +312,28 @@ int main(int args,char* argv[]) {
 	int port, desCurrentClient, DesServer, localBR, nb_client(0);
 	struct sockaddr_in brCv;
 	socklen_t sizeLocalBr;
-	P_Client listeClientsEntreprise[50];
-	P_data data; // création d'un pointeur sur une struct "data"
-	
+	client_t listeClientsEntreprise[3];
+
+// On définit un pointeur sur la structure data
+  data_t data;
+  data = (data_t) malloc(sizeof(data_t));
+
+
+/* Petits test	
+	client_t testcli;
+	testcli = (client_t) malloc(sizeof(client_t));
+	testcli->des_client=1;
+	testcli->name = "tintin";
+	testcli->password= "milou";
+	listeClientsEntreprise[0]=testcli;	
+
   data->nb_client= &nb_client;
-  data->ptr_client_list = listeClientsEntreprise;
-		
+  data->ptr_client_list = listeClientsEntreprise;  
+  cout << *data->nb_client << endl;
+  cout << testcli->name << endl;
+  cout << listeClientsEntreprise[0]->password << endl;
+*/
+
 	if(args == 2) {
 		cout << "N° port saisi : "<< argv[1] << endl;
 		port = atoi(argv[1]);
@@ -335,7 +368,7 @@ int main(int args,char* argv[]) {
 		else {
 		  pthread_t idThread; 
 			cout << "Nouveau Client accepté" << endl;
-			data->descripteur = desCurrentClient;
+		  data->descripteur = desCurrentClient;
 			
 			if(pthread_create(&idThread,NULL,th_new_client,(void*)data) != 0) {
         perror("Erreur création th_new_client");

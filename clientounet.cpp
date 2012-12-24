@@ -34,10 +34,11 @@ int authentification (Client* client)
   char * mdp;
   char* name;
   
-	cout<<"taper votre mot de passe:"<<endl;
-	cin>>mdp;
-	cout<<mdp<<endl;
-	return *mdp;
+	cout<<"Entrez votre nom : "<<endl;
+	cin>>name;
+  if(send(client->des_client,client->message,sizeof(client->message),0) == -1) {
+    perror("Erreur envoi nom client");
+  }
 	
 return statusClient;
 }
