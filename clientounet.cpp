@@ -36,7 +36,7 @@ typedef Client* client_t;
 **/
 int authentification (client_t client)
 {
-  int statusClient(0);
+  int statusClient(-1);
   char name[50];
 
 	cout<<"Entrez votre nom : ";
@@ -45,8 +45,8 @@ int authentification (client_t client)
   if(send(client->des_client,name,sizeof(name),0) == -1) {
     perror("Erreur envoi nom client");
   }
+  client->name = name;
   recv(client->des_client,&statusClient,sizeof(int),0);
-
   
 return statusClient;
 }
@@ -103,7 +103,6 @@ int main (int args, char* argv[] ) {
   else {
     cout << "Connecté au server !" << endl;
     statusClient = authentification(client);
-    cout << "test affection client->name : " << client->name << endl;
     switch(statusClient) 
     {
       case CLIENT_REFUSE : cout << "Identifiants incorrects !" << endl; 

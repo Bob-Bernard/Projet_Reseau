@@ -1,7 +1,8 @@
 #include "libs/sock.h"
 #include "libs/sockdist.h"
 
-#include <string.h>
+#include <string>
+#include <cstring>
 #include <stdio.h>
 #include <iostream>
 #include <stdlib.h>
@@ -22,8 +23,8 @@
 struct Client {
   char message[BUFFER_SIZE];
 	int des_client;
-	char* name;
-	char* password;
+	char name[50];
+	char password[30];
 	bool controller;
 	bool claimed_report;
 	bool received_report;
@@ -208,13 +209,18 @@ void * th_verif_presence_rapport(void* param)
 }
 
 
-int isClient(Client client, P_Client listeClientsEntreprise[])
+int isClient(Client client, client_t listeClientsEntreprise[])
 {
 	int status(0),indice(0);
-	
-	while (listeClientsEntreprise[indice] != NULL)
+	bool found(false);
+		
+	while (listeClientsEntreprise[indice] != NULL && !found)
 	{
-		if(listeClientsEntreprise[indice]->name == client.name) 
+	  cout << "je suis dans la boucle" << endl;
+	  cout << "Nom client : "<< client.name << endl;
+	  cout << "nom client courrant : " << listeClientsEntreprise[indice]->name << endl;
+	  
+		if(strcmp(listeClientsEntreprise[indice]->name,client.name)==0)
 		{
 			if(listeClientsEntreprise[indice]->controller == true) {
 				status = CONTROLEUR_OK;
@@ -225,44 +231,41 @@ int isClient(Client client, P_Client listeClientsEntreprise[])
 			else {
 				status = CLIENT_OK;
 		  }
+		  found = true;
 		  listeClientsEntreprise[indice]->des_client = client.des_client;
 		}
+		cout << "test direct ici" << endl;
 		indice++;
 		
 	} // end loop
 return status;
 }
 
-int authentification (int desClient,int nb_client, P_Client listeClientsEntreprise[])
+int authentification (int desClient, client_t listeClientsEntreprise[])
 {
-	int authentified(0),reception(0),statusClient(0);
+	int reception(0),statusClient(-1);
 	Client tempCli;
+//	tempCli.name = "tintin";
+//	cout << tempCli.name << endl;
   
   cout << "Attente login client... "<< endl;
 	reception = recv(desClient,tempCli.message,sizeof(tempCli.message),0);
-	if(!reception)
-		perror("Erreur réception read()");
-	else {
-		cout <<"Login reçu : " << tempCli.message << endl;
+	if(reception == -1)
+		perror("Erreur réception recv authentification()");
+	else 
+	{
+		cout << tempCli.message << endl;
 		sprintf(tempCli.name,tempCli.message);
 		tempCli.des_client = desClient;
-		statusClient = isClient(tempCli,listeClientsEntreprise);
-	  
-	  if(statusClient == CLIENT_REFUSE) {
-	    authentified = CLIENT_REFUSE;
-	  }
-	  else {                        
-		  switch(statusClient) 
-		  {		   
-			  case CLIENT_OK : authentified = CLIENT_OK; break;
-			  case CLIENT_OK_DISPO : authentified = CLIENT_OK_DISPO; break;
-			  case CONTROLEUR_OK : authentified = CONTROLEUR_OK; break;		
-			  default : perror("Erreur switch statusClient");
-		  }		
-	  } // End if (statusClient == ...)
+		//cout << "Test name : "<< tempCli.name << endl;
+		
+		statusClient = isClient(tempCli,listeClientsEntreprise);	  
+
+	  cout << "Status client : "<< statusClient << endl;
+	  send(desClient,&statusClient,sizeof(int),0);
 	} // End if(reception > 0)
 	
-return authentified;
+return statusClient;
 }
 
 
@@ -273,36 +276,36 @@ return authentified;
 **/
 void* th_new_client(void* param)
 {
-//  P_data data = (P_data) param;
-//  int statusClient = 0;
-//  
-//  statusClient = authentification(data->descripteur,*data->nb_client,
-//  data->ptr_client_list);
-//  if(statusClient == 0) {
-//    close(data->descripteur);
-//  }
-//  else 
-//  {
-//    pthread_t idThread;			  		  
-//    switch(statusClient) 
-//    {
-//      case CLIENT_OK : cout << "C'est un client !"<< endl; break;			    			    
-//      case CLIENT_OK_DISPO : cout << "JC'est un client, rapport dispo !"<< endl; 
-//        if(pthread_create(&idThread,NULL,th_employee_management,
-//        (void*)data->ptr_client_list[*data->nb_client])!= 0)  {
-//          perror("Erreur création thread");
-//        }
-//        break;			      
-//      case CONTROLEUR_OK : cout << "C'est un controleur !"<< endl; 
-//      
-//        break;
-//      default : perror("Petit souci switch(statusClient)"); 
-//                exit(EXIT_FAILURE);
-//    }
+  data_t data = (data_t) param;
+  int statusClient = 0;
+  
+  statusClient = authentification(data->descripteur, data->ptr_client_list);
+  if(statusClient == 0) 
+  {
+    close(data->descripteur);
+  }
+  else 
+  {
+    pthread_t idThread;			  		  
+    switch(statusClient) 
+    {
+      case CLIENT_OK : cout << "C'est un client !"<< endl; break;			    			    
+      case CLIENT_OK_DISPO : cout << "C'est un client, rapport dispo !"<< endl; 
+        if(pthread_create(&idThread,NULL,th_employee_management,
+        (void*)data->ptr_client_list[*data->nb_client])!= 0)  {
+          perror("Erreur création thread");
+        }
+        break;			      
+      case CONTROLEUR_OK : cout << "C'est un controleur !"<< endl; 
+        // lancement thread controleur
+        break;
+      default : perror("Petit souci switch(statusClient)"); 
+                exit(EXIT_FAILURE);
+    }
 
-//    data->nb_client++; // gestion d'accès concurrent ?
-//  }
-//  
+    data->nb_client++; // gestion d'accès concurrent ?
+  }
+  
   pthread_exit(NULL);
 }
 
@@ -312,21 +315,20 @@ int main(int args,char* argv[]) {
 	int port, desCurrentClient, DesServer, localBR, nb_client(0);
 	struct sockaddr_in brCv;
 	socklen_t sizeLocalBr;
-	client_t listeClientsEntreprise[3];
-
+	client_t listeClientsEntreprise[1];
 // On définit un pointeur sur la structure data
-  data_t data;
-  data = (data_t) malloc(sizeof(data_t));
+  data_t data = (data_t)malloc(sizeof(data_t));
+  data->ptr_client_list = listeClientsEntreprise; 
 
 
+// Test création client
+	client_t testcli = (client_t) malloc(sizeof(client_t));
+	sprintf(testcli->name,"tintin");	
+	sprintf(testcli->password,"milou");
+	testcli->claimed_report=false;
+	listeClientsEntreprise[0]=testcli;
+		
 /* Petits test	
-	client_t testcli;
-	testcli = (client_t) malloc(sizeof(client_t));
-	testcli->des_client=1;
-	testcli->name = "tintin";
-	testcli->password= "milou";
-	listeClientsEntreprise[0]=testcli;	
-
   data->nb_client= &nb_client;
   data->ptr_client_list = listeClientsEntreprise;  
   cout << *data->nb_client << endl;
