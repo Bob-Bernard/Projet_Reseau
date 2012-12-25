@@ -19,8 +19,6 @@
 struct Client {
   char message[BUFFER_SIZE];
 	int des_client;
-	char* name;
-	char* password;
 	bool controller;
 	bool claimed_report;
 	bool received_report;
@@ -77,16 +75,19 @@ pthread_exit(NULL);
 void* th_employee(void * param)
 {
   client_t client = (client_t) param;
-  int request(-1);
+  int request(0);
   
   cout << "Que voulez vous faire ?" << endl;
   cout << "1 : Saisir un rapport."<< endl;
   cout << "2 : Télécharger un rapport déjà saisi."<< endl;
   cout << "3 : Quitter" << endl;    
-  cout << "Tappez le chiffre correspondant à votre demande";
+  cout << "Tappez le chiffre correspondant à votre demande : ";
   cin >> request;
   
-  send(client->des_client,&request,sizeof(int),0);
+  cout << "request : " << request <<endl;
+  if(send(client->des_client,&request,sizeof(int),0) < 1) {
+    perror("Erreur envoi request");
+  }
 
 
 pthread_exit(NULL);
@@ -107,7 +108,7 @@ int authentification (client_t client)
   if(send(client->des_client,name,sizeof(name),0) == -1) {
     perror("Erreur envoi nom client");
   }
-  client->name = name;
+  //client->name = name;
   recv(client->des_client,&statusClient,sizeof(int),0);
   
 return statusClient;
@@ -135,6 +136,7 @@ int main (int args, char* argv[] ) {
 	socklen_t* lgLoc;
 	struct sockaddr_in *BRDist;
   client_t client = (client_t) malloc(sizeof(client_t));
+  pthread_t idThread;
 	
 	if(args == 1)
 	{
@@ -154,7 +156,7 @@ int main (int args, char* argv[] ) {
 	BRLocal = client_socket-> getsRetour();
 	SockDist* server_socket = new SockDist(hote,(short)htons(port));
 	BRDist = server_socket->getAdrDist(); // Récupération de sockaddr_in 
-	lgbrSrv = server_socket->getsLen();	
+	lgbrSrv = server_socket->getsLen();
 	
 	//=================================Protocole envoie==============================================
 
@@ -176,17 +178,20 @@ int main (int args, char* argv[] ) {
                        disconnection(client);
                        break;
       case CLIENT_OK_DISPO : cout << "Vous êtes connecté ! ";
-                             cout << "Un rapport vous ai demandé"<< endl;
-                             // lancement fonction client
-                             break;
+        cout << "Un rapport vous ai demandé"<< endl;
+        if(pthread_create(&idThread,NULL,th_employee,(void*)client)!= 0) {
+          perror("Erreur creation thread client");
+        }
+        pthread_join(idThread,NULL);
+        break;
       case CONTROLEUR_OK : cout << "Vous êtes connecté en tant que controleur" << endl;
-                           // lancement fonction controleur
-                           break;
+        // lancement fonction controleur
+        pthread_join(idThread,NULL);
+        break;
       default : cerr << "Switch error after authentification()"<< endl;
                 disconnection(client);
-    }
-    
+    }    
 	}
-
+		
 return EXIT_SUCCESS;
 }

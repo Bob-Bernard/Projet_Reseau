@@ -131,32 +131,31 @@ bool verification_demande_rapport(client_t employee)
 /**
 * Réception d'un rapport que doit envoyer un employé
 **/
-void employee_report_to_pdf(Client* employee)
+void employee_report_to_pdf(client_t employee)
 {
+  int continu(-1),reception(0);
+  int request(0);
+  
   cout << "Début saisie rapport par le client "<< employee->name << endl;
-  int continu(1),reception(0);
-  char request;
+  cout << "Des client : "<< employee->des_client << endl;
 
-  while(continu)
-  {
-	  reception = read(employee->des_client,employee->message,sizeof(employee->message));
-	  if(!reception)
-		  perror("Erreur réception read()");
+//  while(continu)
+//  {
+    if(recv(employee->des_client,&request,sizeof(int),0)==-1) {
+      perror("Erreur reception report to PDF");
+		}
 	  else {
-	    request = employee->message[0];
-	    cout <<"Employé : "<<  employee->name <<" demande reçue "<< request<<endl;
+	    cout << "Demande reçue : "<< request << endl;
 	                        
-	    switch((int)request) 
+	    switch(request) 
 	    {		   
 		    case ADD_LINES :  cout << "Demande d'ajout de ligne" << endl; break;
 		    case FINISH_REPORT : cout << "Demande de finalisation" << endl; 
 		    										 continu = 0; break;		
-		    default : perror("Erreur switch reportToPDF");
+		    default : cerr << "Erreur switch reportToPDF"<<endl;
 	    }	
-	    
-// 	    TODO
     }
-  } 
+//  } // end loop
   
 }
 
@@ -174,28 +173,33 @@ pthread_exit(NULL);
 /**
 * Traitement d'une demande d'envoie de rapport d'un employé
 **/
-void * th_employee_management(void* param) 
+void* th_employee_management(void* param) 
 {
   client_t employee = (client_t)param;
-  int continu(1);
+  int continu(-1);
   
-  cout << "Bonjour "<< employee->name <<" !"<< endl;
-  while(continu)
-  {
-    cout << "Que voulez vous faire ?" << endl;
-    cout << "1 : Saisir un rapport."<< endl;
-    cout << "2 : Télécharger un rapport déjà saisi."<< endl;
-    cout << "3 : Quitter" << endl;    
-    cout << "Tappez le chiffre correspondant à votre demande";
-    
-    cin >> continu;
+  cout << endl<< "Employe management : " << employee->name << endl;
+  cout<< "Des client : " << employee->des_client << endl;
+  
+//  while(continu)
+//  {
+    if(recv(employee->des_client,&continu,sizeof(int),0)==-1)
+      perror("Erreur reception employee management");
+      
     switch(continu) {
-      case 1 : employee_report_to_pdf(employee); break;
-      case 2 : download_PDF(employee); break;
-      case 3 : continu = 0; break;
+      case 1 :  cout << "employee go to report pdf"<<endl;
+        employee_report_to_pdf(employee);
+        break;
+      case 2 :  cout << "employee go to download pdf"<<endl;
+        download_PDF(employee); 
+        break;
+      case 3 : continu = 0; 
+        cout << "employee quit" << endl;
+        break;
       default : cout << "Erreur de saisie, veuillez recommencer" << endl;
     }
-  }  
+//  }
+  close(employee->des_client); 
 pthread_exit(NULL);
 }
 
@@ -344,7 +348,7 @@ int main(int args,char* argv[]) {
 	socklen_t sizeLocalBr;
 	
 	int nb_client = 3;
-	client_t listeClientsEntreprise[nb_client];
+  client_t listeClientsEntreprise[nb_client];
 	
 // On définit un pointeur sur la structure data
   data_t data = (data_t)malloc(sizeof(data_t));
@@ -364,7 +368,7 @@ int main(int args,char* argv[]) {
 	client_t testcli3 = (client_t) malloc(sizeof(client_t));
 	sprintf(testcli3->name,"tutu");	
 	sprintf(testcli3->password,"boby");
-	testcli3->claimed_report=false;
+	testcli3->claimed_report=true;
 	
 
 	listeClientsEntreprise[0] = testcli;
