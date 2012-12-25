@@ -34,7 +34,7 @@ typedef Client* client_t;
 
 struct data {
   int descripteur;
-  P_Client* ptr_client_list;
+  client_t* ptr_client_list;
   int* nb_connected_client;
   int* nb_client;
 };
@@ -123,9 +123,9 @@ void disconnection(Client* client)
 * Retourne vrai si l'employé donné en argument doit envoyer un rapport
 * @param : employé
 **/
-bool verification_demande_rapport(Client* employe)
+bool verification_demande_rapport(client_t employee)
 {
-  return employe->claimed_report;
+  return employee->claimed_report;
 }
 
 /**
@@ -176,8 +176,8 @@ pthread_exit(NULL);
 **/
 void * th_employee_management(void* param) 
 {
-  Client* employee = (Client*)param;
-  int continu = 1;
+  client_t employee = (client_t)param;
+  int continu(1);
   
   cout << "Bonjour "<< employee->name <<" !"<< endl;
   while(continu)
@@ -210,64 +210,76 @@ void * th_verif_presence_rapport(void* param)
 }
 
 
-int isClient(Client client, int* nb_client, client_t listeClientsEntreprise[])
+int* isClient(Client client, int* nb_client, client_t listeClientsEntreprise[])
 {
 	int status(0),indice(0);
 	bool found(false);
-	cout << "nb_client : " << *nb_client << endl;
+	int* infos_client = (int*)malloc(2*sizeof(int));
+	
+	if(infos_client == NULL ) {
+       perror("Allocation impossible");
+       exit(EXIT_FAILURE);
+  }
+	infos_client[0]= status;
+	infos_client[1]= indice;
 		
 	while (indice < *nb_client && !found)
 	{
-	  cout << "je suis dans la boucle" << endl;
-	  cout << "Nom client : "<< client.name << endl;
-	  //cout << "nom client courrant : " << listeClientsEntreprise[indice]->name << endl<< endl;
+	  //cout << "indice courant : " << indice <<endl;
+	  cout << listeClientsEntreprise[indice]->name<< " == " << client.name<< endl;
 	  
 		if(strcmp(listeClientsEntreprise[indice]->name,client.name)==0)
 		{
-		  //cout << "test égalité ici" << endl;
 			if(listeClientsEntreprise[indice]->controller == true) {
 				status = CONTROLEUR_OK;
 			}
-			else if(verification_demande_rapport(listeClientsEntreprise[indice]) )	{
+			else if(verification_demande_rapport(listeClientsEntreprise[indice]))	{
 					status = CLIENT_OK_DISPO;	
 			}
 			else {
 				status = CLIENT_OK;
 		  }
 		  found = true;
+		  infos_client[0]= status;
+		  infos_client[1]= indice;
+		  cout << "status : " << infos_client[0] << " indice : "<< infos_client[1] << endl;
+		  
+		  // Accès concurrant ?
 		  listeClientsEntreprise[indice]->des_client = client.des_client;
 		}
- 		indice++;
-		
+		indice++;		
 	} // end loop
-return status;
+	cout << "test client name after strcmp : "<<listeClientsEntreprise[0]->name<<endl;
+return infos_client;
 }
 
-int authentification (int desClient,int* nb_client, client_t listeClientsEntreprise[])
+int* authentification (int desClient, int* nb_client, client_t listeClientsEntreprise[])
 {
-	int reception(0),statusClient(-1);
-	Client tempCli;
-//	tempCli.name = "tintin";
-//	cout << tempCli.name << endl;
+	int reception(-1);
+	int* infos_client(NULL);
+	//int* infos_client = (int*)malloc(2*sizeof(int));
+	
+	Client temp_client;
   
   cout << "Attente login client... "<< endl;
-	reception = recv(desClient,tempCli.message,sizeof(tempCli.message),0);
+	reception = recv(desClient,temp_client.message,sizeof(temp_client.message),0);
 	if(reception == -1)
 		perror("Erreur réception recv authentification()");
 	else 
 	{
-		cout << tempCli.message << endl;
-		sprintf(tempCli.name,tempCli.message);
-		tempCli.des_client = desClient;
-		//cout << "Test name : "<< tempCli.name << endl;
+		cout << "login : " << temp_client.message << endl;
+		sprintf(temp_client.name,temp_client.message);
+		temp_client.des_client = desClient;
 		
-		statusClient = isClient(tempCli,nb_client, listeClientsEntreprise);	  
-
-	  cout << "Status client : "<< statusClient << endl;
-	  send(desClient,&statusClient,sizeof(int),0);
+		infos_client = isClient(temp_client, nb_client, listeClientsEntreprise);
+//		infos_client[0]=1;
+//		infos_client[1]=1;
+		
+	  cout << "Status client : "<< infos_client[0] << endl;
+	  send(desClient,&infos_client[0],sizeof(int),0);
 	} // End if(reception > 0)
 	
-return statusClient;
+return infos_client;
 }
 
 
@@ -279,12 +291,18 @@ return statusClient;
 void* th_new_client(void* param)
 {
   data_t data = (data_t) param;
-  int statusClient = 0;
+ 	int* infos_client(NULL);
+  int statusClient = 1;
   
-  statusClient = authentification(data->descripteur,data->nb_client,
-  data->ptr_client_list);
+  cout << "test client name th_new : "<< data->ptr_client_list[0]->name << endl;
+  
+  infos_client = authentification(data->descripteur,data->nb_client,data->ptr_client_list);
+  cout << "Status : " << infos_client[0] << " Indice : "<< infos_client[1] << endl;
+  
+  statusClient = infos_client[0];
   if(statusClient == 0) 
   {
+    cout << "Erreur identifiants"<<endl;
     close(data->descripteur);
   }
   else 
@@ -292,22 +310,28 @@ void* th_new_client(void* param)
     pthread_t idThread;			  		  
     switch(statusClient) 
     {
-      case CLIENT_OK : cout << "C'est un client !"<< endl; break;			    			    
+      case CLIENT_OK : cout << "C'est un client !"<< endl;
+        close(data->descripteur);
+        break;			    			    
       case CLIENT_OK_DISPO : cout << "C'est un client, rapport dispo !"<< endl; 
         if(pthread_create(&idThread,NULL,th_employee_management,
-        (void*)data->ptr_client_list[*data->nb_connected_client])!= 0)  {
+        (void*)data->ptr_client_list[infos_client[1]] )!= 0)  
+        {
           perror("Erreur création thread");
         }
         break;			      
       case CONTROLEUR_OK : cout << "C'est un controleur !"<< endl; 
         // lancement thread controleur
         break;
-      default : perror("Petit souci switch(statusClient)"); 
-                exit(EXIT_FAILURE);
+      default : perror("Petit souci switch(statusClient)");
+        close(data->descripteur);
+        exit(EXIT_FAILURE);
     }
-
-    data->nb_connected_client++; // gestion d'accès concurrent ?
+    //cout << "Compteur nombre connectés incrémenté !" << endl;
+    //data->nb_connected_client++; // gestion d'accès concurrant ?
   }
+  if(infos_client != NULL)
+  free(infos_client);
   
   pthread_exit(NULL);
 }
@@ -319,7 +343,7 @@ int main(int args,char* argv[]) {
 	struct sockaddr_in brCv;
 	socklen_t sizeLocalBr;
 	
-	int nb_client = 2;
+	int nb_client = 3;
 	client_t listeClientsEntreprise[nb_client];
 	
 // On définit un pointeur sur la structure data
@@ -335,11 +359,17 @@ int main(int args,char* argv[]) {
 	client_t testcli2 = (client_t) malloc(sizeof(client_t));
 	sprintf(testcli2->name,"bob");	
 	sprintf(testcli2->password,"boby");
-	testcli2->claimed_report=true;
+	testcli2->claimed_report=false;
+	
+	client_t testcli3 = (client_t) malloc(sizeof(client_t));
+	sprintf(testcli3->name,"tutu");	
+	sprintf(testcli3->password,"boby");
+	testcli3->claimed_report=false;
 	
 
 	listeClientsEntreprise[0] = testcli;
 	listeClientsEntreprise[1] = testcli2;
+	listeClientsEntreprise[2] = testcli3;
 	data->nb_client = &nb_client;
 
 		
@@ -375,7 +405,7 @@ int main(int args,char* argv[]) {
 		exit(EXIT_FAILURE);
 	}
 	
-	if(listen(DesServer,5) == -1)
+	if(listen(DesServer,10) == -1)
 	perror("Erreur listen()");
 
 	while(1)
@@ -385,14 +415,15 @@ int main(int args,char* argv[]) {
 		if(desCurrentClient == -1)
 			perror("Erreur accept ");
 		else {
-		  pthread_t idThread; 
-			cout << "Nouveau Client accepté" << endl;
+  		pthread_t idThread; 
+			cout << "Nouveau Client accepté" << endl<<endl;
 		  data->descripteur = desCurrentClient;
+		  
+		  cout << "test nom client main : " <<listeClientsEntreprise[0]->name << endl;
 			
 			if(pthread_create(&idThread,NULL,th_new_client,(void*)data) != 0) {
         perror("Erreur création th_new_client");
       }
-      
 		}// End if Client accepté
 	} // End loop
 	
