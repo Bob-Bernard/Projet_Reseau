@@ -27,8 +27,70 @@ struct Client {
 };
 typedef Client* client_t;
 
+/**
+* Gère l'envoi du rapport PDF à l'employé
+**/
+bool download_PDF(Client* client)
+{
+  int file_size(0),read(0),received_bytes(0);
+	char file_content[BUFFER_SIZE];
+	bool file_received = false;
+	FILE* pdf_file = fopen("monRapport.pdf", "wb");
+	
+	if(pdf_file != NULL) 
+	{
+	  recv(client->des_client,&file_size,sizeof(int),0);
+	  if(file_size == 0) { 
+	   perror("Erreur reception taille fichier"); 
+	  }
+	
+	  while(received_bytes < file_size)
+	  {	
+		  read = recv(client->des_client,file_content,sizeof(file_content),0);
+		  fwrite(file_content,sizeof(char),read,pdf_file);
+		  received_bytes += read;
+	  }
+	  cout << "Rapport reçu !" << endl;
+	  file_received = true;
+	  fclose(pdf_file);	
+	}
+	else { 
+	  cout << "Fichier PDF inconnu" << endl;
+	}		
+
+return file_received;
+}
+/*
+**
+*/
+void* th_controller()
+{
 
 
+pthread_exit(NULL);
+}
+
+
+/*
+**
+*/
+void* th_employee(void * param)
+{
+  client_t client = (client_t) param;
+  int request(-1);
+  
+  cout << "Que voulez vous faire ?" << endl;
+  cout << "1 : Saisir un rapport."<< endl;
+  cout << "2 : Télécharger un rapport déjà saisi."<< endl;
+  cout << "3 : Quitter" << endl;    
+  cout << "Tappez le chiffre correspondant à votre demande";
+  cin >> request;
+  
+  send(client->des_client,&request,sizeof(int),0);
+
+
+pthread_exit(NULL);
+}
 
 
 /**
