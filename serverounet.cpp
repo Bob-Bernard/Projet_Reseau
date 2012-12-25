@@ -35,6 +35,7 @@ typedef Client* client_t;
 struct data {
   int descripteur;
   P_Client* ptr_client_list;
+  int* nb_connected_client;
   int* nb_client;
 };
 //typedef data* P_data;
@@ -209,19 +210,21 @@ void * th_verif_presence_rapport(void* param)
 }
 
 
-int isClient(Client client, client_t listeClientsEntreprise[])
+int isClient(Client client, int* nb_client, client_t listeClientsEntreprise[])
 {
 	int status(0),indice(0);
 	bool found(false);
+	cout << "nb_client : " << *nb_client << endl;
 		
-	while (listeClientsEntreprise[indice] != NULL && !found)
+	while (indice < *nb_client && !found)
 	{
 	  cout << "je suis dans la boucle" << endl;
 	  cout << "Nom client : "<< client.name << endl;
-	  cout << "nom client courrant : " << listeClientsEntreprise[indice]->name << endl;
+	  //cout << "nom client courrant : " << listeClientsEntreprise[indice]->name << endl<< endl;
 	  
 		if(strcmp(listeClientsEntreprise[indice]->name,client.name)==0)
 		{
+		  //cout << "test égalité ici" << endl;
 			if(listeClientsEntreprise[indice]->controller == true) {
 				status = CONTROLEUR_OK;
 			}
@@ -234,14 +237,13 @@ int isClient(Client client, client_t listeClientsEntreprise[])
 		  found = true;
 		  listeClientsEntreprise[indice]->des_client = client.des_client;
 		}
-		cout << "test direct ici" << endl;
-		indice++;
+ 		indice++;
 		
 	} // end loop
 return status;
 }
 
-int authentification (int desClient, client_t listeClientsEntreprise[])
+int authentification (int desClient,int* nb_client, client_t listeClientsEntreprise[])
 {
 	int reception(0),statusClient(-1);
 	Client tempCli;
@@ -259,7 +261,7 @@ int authentification (int desClient, client_t listeClientsEntreprise[])
 		tempCli.des_client = desClient;
 		//cout << "Test name : "<< tempCli.name << endl;
 		
-		statusClient = isClient(tempCli,listeClientsEntreprise);	  
+		statusClient = isClient(tempCli,nb_client, listeClientsEntreprise);	  
 
 	  cout << "Status client : "<< statusClient << endl;
 	  send(desClient,&statusClient,sizeof(int),0);
@@ -279,7 +281,8 @@ void* th_new_client(void* param)
   data_t data = (data_t) param;
   int statusClient = 0;
   
-  statusClient = authentification(data->descripteur, data->ptr_client_list);
+  statusClient = authentification(data->descripteur,data->nb_client,
+  data->ptr_client_list);
   if(statusClient == 0) 
   {
     close(data->descripteur);
@@ -292,7 +295,7 @@ void* th_new_client(void* param)
       case CLIENT_OK : cout << "C'est un client !"<< endl; break;			    			    
       case CLIENT_OK_DISPO : cout << "C'est un client, rapport dispo !"<< endl; 
         if(pthread_create(&idThread,NULL,th_employee_management,
-        (void*)data->ptr_client_list[*data->nb_client])!= 0)  {
+        (void*)data->ptr_client_list[*data->nb_connected_client])!= 0)  {
           perror("Erreur création thread");
         }
         break;			      
@@ -303,7 +306,7 @@ void* th_new_client(void* param)
                 exit(EXIT_FAILURE);
     }
 
-    data->nb_client++; // gestion d'accès concurrent ?
+    data->nb_connected_client++; // gestion d'accès concurrent ?
   }
   
   pthread_exit(NULL);
@@ -312,26 +315,40 @@ void* th_new_client(void* param)
 
 
 int main(int args,char* argv[]) {
-	int port, desCurrentClient, DesServer, localBR, nb_client(0);
+	int port, desCurrentClient, DesServer, localBR, nb_connected_client(0);
 	struct sockaddr_in brCv;
 	socklen_t sizeLocalBr;
-	client_t listeClientsEntreprise[1];
+	
+	int nb_client = 2;
+	client_t listeClientsEntreprise[nb_client];
+	
 // On définit un pointeur sur la structure data
   data_t data = (data_t)malloc(sizeof(data_t));
-  data->ptr_client_list = listeClientsEntreprise; 
-
+  data->ptr_client_list = listeClientsEntreprise;
 
 // Test création client
 	client_t testcli = (client_t) malloc(sizeof(client_t));
 	sprintf(testcli->name,"tintin");	
 	sprintf(testcli->password,"milou");
 	testcli->claimed_report=false;
-	listeClientsEntreprise[0]=testcli;
+	
+	client_t testcli2 = (client_t) malloc(sizeof(client_t));
+	sprintf(testcli2->name,"bob");	
+	sprintf(testcli2->password,"boby");
+	testcli2->claimed_report=true;
+	
+
+	listeClientsEntreprise[0] = testcli;
+	listeClientsEntreprise[1] = testcli2;
+	data->nb_client = &nb_client;
+
 		
 /* Petits test	
-  data->nb_client= &nb_client;
-  data->ptr_client_list = listeClientsEntreprise;  
+  data->nb_connected_client= &nb_connected_client;
+  data->ptr_client_list = listeClientsEntreprise;
   cout << *data->nb_client << endl;
+  cout << *data->nb_connected_client << endl;
+    cout << *data->nb_client << endl;
   cout << testcli->name << endl;
   cout << listeClientsEntreprise[0]->password << endl;
 */

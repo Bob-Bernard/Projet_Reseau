@@ -113,7 +113,7 @@ int main (int args, char* argv[] ) {
                        cout << "Vous allez être déconnecté" << endl;
                        disconnection(client);
                        break;
-      case CLIENT_OK_DISPO : cout << "Vous êtes connecté !";
+      case CLIENT_OK_DISPO : cout << "Vous êtes connecté ! ";
                              cout << "Un rapport vous ai demandé"<< endl;
                              // lancement fonction client
                              break;
