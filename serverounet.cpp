@@ -134,7 +134,9 @@ bool verification_demande_rapport(client_t employee)
 void employee_report_to_pdf(client_t employee)
 {
   int continu(-1),reception(0);
-  int request(0);
+  int request(1);
+  
+  send(employee->des_client,&request,sizeof(int),0);
   
   cout << "Début saisie rapport par le client "<< employee->name << endl;
   cout << "Des client : "<< employee->des_client << endl;
@@ -191,13 +193,14 @@ void* th_employee_management(void* param)
         employee_report_to_pdf(employee);
         break;
       case 2 :  cout << "employee go to download pdf"<<endl;
-        download_PDF(employee); 
+        download_PDF(employee);
         break;
       case 3 : continu = 0; 
         cout << "employee quit" << endl;
         break;
       default : cout << "Erreur de saisie, veuillez recommencer" << endl;
     }
+    
 //  }
   close(employee->des_client); 
 pthread_exit(NULL);

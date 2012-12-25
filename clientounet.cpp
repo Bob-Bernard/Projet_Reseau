@@ -88,7 +88,18 @@ void* th_employee(void * param)
   if(send(client->des_client,&request,sizeof(int),0) < 1) {
     perror("Erreur envoi request");
   }
-
+  request == -1;
+  if(recv(client->des_client,&request,sizeof(int),0)==-1) {
+    perror("Erreur reception report to PDF");
+	}
+	switch(request)
+	{
+	case 1 : cout << "Demande saisie rapport reçue" << endl;
+	  break;
+	case 2 : cout << "Demande download PDF reçue" << endl;
+	  break;
+	default : cout << "Demande refusée" << endl;	
+	}
 
 pthread_exit(NULL);
 }
