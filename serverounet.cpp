@@ -301,11 +301,18 @@ return infos_client;
 **/
 void* th_new_client(void* param)
 {
-  data_t data = (data_t) param;
+  data_t data(NULL); 
+  if(param != NULL) {
+    data = (data_t) param;
+  }
+  else {
+    perror("Error : param value");
+  }
  	int* infos_client(NULL);
   int statusClient(-1);
   
   cout << "test client name th_new : "<< data->ptr_client_list[0]->name << endl;
+
   
   infos_client = authentification(data->descripteur,data->nb_client,data->ptr_client_list);
   cout << "Status : " << infos_client[0] << " Indice : "<< infos_client[1] << endl;
@@ -354,12 +361,13 @@ int main(int args,char* argv[]) {
 	struct sockaddr_in brCv;
 	socklen_t sizeLocalBr;
 	
-	int nb_client = 3;
+	int nb_client = 4;
   client_t listeClientsEntreprise[nb_client];
 	
 // On définit un pointeur sur la structure data
   data_t data = (data_t)malloc(sizeof(data_t));
   data->ptr_client_list = listeClientsEntreprise;
+  data->nb_connected_client= &nb_connected_client;
 
 // Test création client
 	client_t testcli = (client_t) malloc(sizeof(client_t));
@@ -375,17 +383,21 @@ int main(int args,char* argv[]) {
 	client_t testcli3 = (client_t) malloc(sizeof(client_t));
 	sprintf(testcli3->name,"tutu");	
 	sprintf(testcli3->password,"boby");
-	testcli3->claimed_report=true;
+	testcli3->claimed_report=false;
 	
+	client_t testcli4 = (client_t) malloc(sizeof(client_t));
+	sprintf(testcli4->name,"beber");	
+	sprintf(testcli4->password,"boby");
+	testcli4->claimed_report=false;
 
 	listeClientsEntreprise[0] = testcli;
 	listeClientsEntreprise[1] = testcli2;
 	listeClientsEntreprise[2] = testcli3;
+	listeClientsEntreprise[3] = testcli4;	
 	data->nb_client = &nb_client;
 
 		
 /* Petits test	
-  data->nb_connected_client= &nb_connected_client;
   data->ptr_client_list = listeClientsEntreprise;
   cout << *data->nb_client << endl;
   cout << *data->nb_connected_client << endl;

@@ -32,8 +32,17 @@ typedef Client* client_t;
 **/
 void write_employee_report(client_t client)
 {
-
-
+	int continu;
+	char txt[50];
+	cout<<"saisissez votre texte";
+	cin>>txt;
+	cout<<txt<<endl;
+	send(client->des_client,txt,sizeof(char[50]),0);
+	cout<<"Avez vous terminé?"<<endl;
+	cout<<"1-Oui"<<endl;
+	cout<<"2-Non"<<endl;
+	cin>>continu;
+	send(client->des_client,&continu,sizeof(int),0);
 }
 
 
@@ -89,6 +98,8 @@ void* th_employee(void * param)
   client_t client = (client_t) param;
   int request(0);
   
+  while(request!=3)
+  {
   cout << "Que voulez vous faire ?" << endl;
   cout << "1 : Saisir un rapport."<< endl;
   cout << "2 : Télécharger un rapport déjà saisi."<< endl;
@@ -110,11 +121,11 @@ void* th_employee(void * param)
 	  write_employee_report(client);
 	  break;
 	case 2 : cout << "Demande download PDF reçue" << endl;
-	  download_PDF(client);
+	  //download_PDF(client);
 	  break;
 	default : cout << "Demande refusée" << endl;	
 	}
-
+}
 pthread_exit(NULL);
 }
 
