@@ -19,11 +19,23 @@
 struct Client {
   char message[BUFFER_SIZE];
 	int des_client;
+	char name[50];
 	bool controller;
 	bool claimed_report;
 	bool received_report;
 };
 typedef Client* client_t;
+
+
+/**
+** Permet a un employé de saisir son rapport
+**/
+void write_employee_report(client_t client)
+{
+
+
+}
+
 
 /**
 * Gère l'envoi du rapport PDF à l'employé
@@ -89,14 +101,16 @@ void* th_employee(void * param)
     perror("Erreur envoi request");
   }
   request == -1;
-  if(recv(client->des_client,&request,sizeof(int),0)==-1) {
-    perror("Erreur reception report to PDF");
-	}
+//  if(recv(client->des_client,&request,sizeof(int),0)==-1) {
+//    perror("Erreur reception report to PDF");
+//	}
 	switch(request)
 	{
 	case 1 : cout << "Demande saisie rapport reçue" << endl;
+	  write_employee_report(client);
 	  break;
 	case 2 : cout << "Demande download PDF reçue" << endl;
+	  download_PDF(client);
 	  break;
 	default : cout << "Demande refusée" << endl;	
 	}
@@ -114,12 +128,11 @@ int authentification (client_t client)
   char name[50];
 
 	cout<<"Entrez votre nom : ";
-	cin >> name;
+	cin >> client->name;
 	
-  if(send(client->des_client,name,sizeof(name),0) == -1) {
+  if(send(client->des_client,client->name,sizeof(name),0) == -1) {
     perror("Erreur envoi nom client");
   }
-  //client->name = name;
   recv(client->des_client,&statusClient,sizeof(int),0);
   
 return statusClient;

@@ -1,5 +1,6 @@
 #include "libs/sock.h"
 #include "libs/sockdist.h"
+#include "libs/sauvegarde.h"
 
 #include <string>
 #include <cstring>
@@ -136,10 +137,13 @@ void employee_report_to_pdf(client_t employee)
   int continu(-1),reception(0);
   int request(1);
   
-  send(employee->des_client,&request,sizeof(int),0);
+  //send(employee->des_client,&request,sizeof(int),0);
   
   cout << "Début saisie rapport par le client "<< employee->name << endl;
   //cout << "Des client : "<< employee->des_client << endl;
+  
+  Ecrit("Bloc infos 1", "Employe");
+  int fd = OuvreRapport("Employe");
   
 //  while(continu)
 //  {
@@ -151,9 +155,13 @@ void employee_report_to_pdf(client_t employee)
 	                        
 	    switch(request) 
 	    {		   
-		    case ADD_LINES :  cout << "Demande d'ajout de ligne" << endl; break;
+		    case ADD_LINES :  cout << "Demande d'ajout de ligne" << endl; 
+		      // lancement fonction ajoute ligne rapport
+		      break;
 		    case FINISH_REPORT : cout << "Demande de finalisation" << endl; 
-		    										 continu = 0; break;		
+		      continu = 0;
+		      // lancement OuvreRapport
+		    	break;		
 		    default : cerr << "Erreur switch reportToPDF"<<endl;
 	    }	
     }
