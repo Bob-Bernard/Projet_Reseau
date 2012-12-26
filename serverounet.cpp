@@ -139,8 +139,8 @@ void employee_report_to_pdf(client_t employee)
   send(employee->des_client,&request,sizeof(int),0);
   
   cout << "Début saisie rapport par le client "<< employee->name << endl;
-  cout << "Des client : "<< employee->des_client << endl;
-
+  //cout << "Des client : "<< employee->des_client << endl;
+  
 //  while(continu)
 //  {
     if(recv(employee->des_client,&request,sizeof(int),0)==-1) {

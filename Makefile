@@ -3,18 +3,18 @@ FLAGS=`pkg-config --cflags --libs gtk+-2.0`
 LIB_FOLDER=libs
 CC=g++
 CC2=gcc
-EXEC= server client sauvegarde
+EXEC= sauvegarde server client
 
 all: $(EXEC) 
 
-server: $(LIB_FOLDER)/sockdist.o $(LIB_FOLDER)/sock.o serverounet.o
-	$(CC) -o exec/$@ $^ $(CFLAGS)
+server: $(LIB_FOLDER)/sockdist.o $(LIB_FOLDER)/sock.o sauvegarde.o serverounet.o 
+	$(CC) -o exec/$@ $^ $(CFLAGS) $(FLAGS)
  
-client: $(LIB_FOLDER)/sockdist.o $(LIB_FOLDER)/sock.o clientounet.o
+client: $(LIB_FOLDER)/sockdist.o $(LIB_FOLDER)/sock.o clientounet.o 
 	$(CC) -o exec/$@ $^ $(CFLAGS)
 
 sauvegarde: 
-	gcc $(FLAGS) $(LIB_FOLDER)/sauvegarde.c -o exec/$@
+	gcc -c $(FLAGS) $(LIB_FOLDER)/sauvegarde.c 
   
 		
 #%.o: %.cc $(CC) -c $< $(LDFLAGS)
