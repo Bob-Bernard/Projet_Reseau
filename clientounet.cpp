@@ -100,7 +100,7 @@ void* th_employee(void * param)
   if(send(client->des_client,&request,sizeof(int),0) < 1) {
     perror("Erreur envoi request");
   }
-  request == -1;
+  //request == -1;
 //  if(recv(client->des_client,&request,sizeof(int),0)==-1) {
 //    perror("Erreur reception report to PDF");
 //	}

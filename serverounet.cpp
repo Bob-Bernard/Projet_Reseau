@@ -137,16 +137,12 @@ void employee_report_to_pdf(client_t employee)
   int continu(-1),reception(0);
   int request(1);
   
-  //send(employee->des_client,&request,sizeof(int),0);
-  
+  //send(employee->des_client,&request,sizeof(int),0);  
   cout << "Début saisie rapport par le client "<< employee->name << endl;
   //cout << "Des client : "<< employee->des_client << endl;
   
-  Ecrit("Bloc infos 1", "Employe");
-  int fd = OuvreRapport("Employe");
-  
-//  while(continu)
-//  {
+  while(continu)
+  {
     if(recv(employee->des_client,&request,sizeof(int),0)==-1) {
       perror("Erreur reception report to PDF");
 		}
@@ -165,7 +161,7 @@ void employee_report_to_pdf(client_t employee)
 		    default : cerr << "Erreur switch reportToPDF"<<endl;
 	    }	
     }
-//  } // end loop
+  } // end loop
   
 }
 
@@ -186,24 +182,24 @@ pthread_exit(NULL);
 void* th_employee_management(void* param) 
 {
   client_t employee = (client_t)param;
-  int continu(-1);
+  int request(-1);
   
   cout << endl<< "Employe management : " << employee->name << endl;
   cout<< "Des client : " << employee->des_client << endl;
-  
+    
 //  while(continu)
 //  {
-    if(recv(employee->des_client,&continu,sizeof(int),0)==-1)
+    if(recv(employee->des_client,&request,sizeof(int),0)==-1)
       perror("Erreur reception employee management");
       
-    switch(continu) {
+    switch(request) {
       case 1 :  cout << "employee go to report pdf"<<endl;
         employee_report_to_pdf(employee);
         break;
       case 2 :  cout << "employee go to download pdf"<<endl;
         download_PDF(employee);
         break;
-      case 3 : continu = 0; 
+      case 3 : request = 0; 
         cout << "employee quit" << endl;
         break;
       default : cout << "Erreur de saisie, veuillez recommencer" << endl;
@@ -307,7 +303,7 @@ void* th_new_client(void* param)
 {
   data_t data = (data_t) param;
  	int* infos_client(NULL);
-  int statusClient = 1;
+  int statusClient(-1);
   
   cout << "test client name th_new : "<< data->ptr_client_list[0]->name << endl;
   
