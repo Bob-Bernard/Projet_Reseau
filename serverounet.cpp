@@ -120,7 +120,9 @@ void add_lign(client_t client)
       perror("Erreur réception");
       break;
     }
-    //Ecrit(client->message,client->name);
+    cout <<"Message reçu : " << client->message << endl;
+    cout <<"Client name : " << client->name <<endl;
+    Ecrit("bilboquet","haddock");
     cout << "Ligne écrite !" << endl;
     recv(client->des_client,&continu,sizeof(int),0);
     cout << "Continu : "<< continu << endl;
@@ -136,7 +138,7 @@ void employee_report_to_pdf(client_t employee)
   
   cout << "Début saisie rapport par le client "<< employee->name << endl;
   cout<< "Des client : " << employee->des_client << endl;
-  
+
   while(continu!=0)
   {
     if(recv(employee->des_client,&request,sizeof(int),0)==-1) {
@@ -147,8 +149,13 @@ void employee_report_to_pdf(client_t employee)
 	                        
 	    switch(request) 
 	    {		   
-		    case ADD_LINES :  cout << "Demande d'ajout de ligne" << endl; 
-		      add_lign(employee);
+		    case ADD_LINES :  cout << "Demande d'ajout de ligne" << endl;
+		      recv(employee->des_client,employee->message,sizeof(employee->message),0);
+  	       //Ecrit(employee->message,employee->name);
+  	       Ecrit("turlultuuthjtu","tata");
+  	       cout << "Ligne ajoutée !" << endl;
+  	       
+		      //add_lign(employee);
 		      // lancement fonction ajoute ligne rapport
 		      break;
 		    case FINISH_REPORT : cout << "Demande de finalisation" << endl; 
@@ -183,7 +190,9 @@ void* th_employee_management(void* param)
   
   cout << endl<< "Employe management : " << employee->name << endl;
   cout<< "Des client : " << employee->des_client << endl;
-    
+//  Ecrit("tutu","tata");
+//  Ecrit(employee->message,employee->name);
+  
   while(continu != 0)
   {
     if(recv(employee->des_client,&request,sizeof(int),0)==-1)

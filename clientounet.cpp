@@ -72,13 +72,14 @@ void add_lign_to_report(client_t client)
     
     send(client->des_client,client->message,sizeof(client->message),0);
 	  
-	  cout<<"Avez vous terminé?:   "<<endl;
-	  cout<<"1-Non"<<endl;
-	  cout<<"2-Oui"<<endl;
-	  cin.clear();
-	  cin>>continu;
-	  send(client->des_client,&continu,sizeof(int),0);
-	  cin.ignore(1,'\n'); // vide le buffer  
+	  continu = 2;
+//	  cout<<"Avez vous terminé?:   "<<endl;
+//	  cout<<"1-Non"<<endl;
+//	  cout<<"2-Oui"<<endl;
+//	  cin.clear();
+//	  cin>>continu;
+//	  send(client->des_client,&continu,sizeof(int),0);
+//	  cin.ignore(1,'\n'); // vide le buffer  
 	}
 }
 
