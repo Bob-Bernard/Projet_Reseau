@@ -108,6 +108,20 @@ bool verification_demande_rapport(client_t employee)
 }
 
 /**
+* Ajoute une ligne dans le rapport
+**/
+void add_lign(client_t client)
+{
+  int continu=-1;
+  while (continu!=0)
+  {
+    recv(client->des_client,client->message,sizeof(client->message),0);
+    Ecrit(client->message,client->name);
+    recv(client->des_client,&continu,sizeof(int),0); 
+    
+  }
+}
+/**
 * Réception d'un rapport que doit envoyer un employé
 **/
 void employee_report_to_pdf(client_t employee)
@@ -118,23 +132,27 @@ void employee_report_to_pdf(client_t employee)
   cout << "Début saisie rapport par le client "<< employee->name << endl;
   cout<< "Des client : " << employee->des_client << endl;
   
-  while(continu)
+  while(continu!=0)
   {
+    cout<<"wazaaaaa"<<endl;
     if(recv(employee->des_client,&request,sizeof(int),0)==-1) {
       perror("Erreur reception report to PDF");
+      cout<<"wazaaaaa20"<<endl;
 		}
 	  else {
+	    cout<<"wazaaaaa30"<<endl;
 	    cout << "Demande reçue : "<< request << endl;
 	                        
 	    switch(request) 
 	    {		   
 		    case ADD_LINES :  cout << "Demande d'ajout de ligne" << endl; 
+		      add_lign(employee);
 		      // lancement fonction ajoute ligne rapport
 		      break;
 		    case FINISH_REPORT : cout << "Demande de finalisation" << endl; 
 		      continu = 0;
 		      // lancement OuvreRapport
-		    	break;		
+		    	break;	
 		    default : cerr << "Erreur switch reportToPDF"<<endl;
 	    }	
     }
@@ -159,13 +177,13 @@ pthread_exit(NULL);
 void* th_employee_management(void* param) 
 {
   client_t employee = (client_t)param;
-  int request(-1);
+  int request(-1),continu(-1);
   
   cout << endl<< "Employe management : " << employee->name << endl;
   cout<< "Des client : " << employee->des_client << endl;
     
-//  while(continu)
-//  {
+  while(continu != 0)
+  {
     if(recv(employee->des_client,&request,sizeof(int),0)==-1)
       perror("Erreur reception employee management");
       
@@ -176,13 +194,13 @@ void* th_employee_management(void* param)
       case 2 :  cout << "employee go to download pdf" << endl;
         download_PDF(employee);
         break;
-      case 3 : request = 0; 
+      case 3 : continu = 0; 
         cout << "employee quit" << endl;
         break;
       default : cout << "Erreur de saisie, veuillez recommencer" << endl;
     }
     
-//  }
+  }
   close(employee->des_client); 
 pthread_exit(NULL);
 }

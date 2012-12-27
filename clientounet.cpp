@@ -16,6 +16,12 @@
 #define CLIENT_OK_DISPO 2
 #define CONTROLEUR_OK 3
 
+#define ADD_LINES 1
+#define FINISH_REPORT 2
+
+using namespace std;
+
+
 struct Client {
   char message[BUFFER_SIZE];
 	int des_client;
@@ -29,6 +35,44 @@ typedef Client* client_t;
 /**
 * Déconnecte un client
 **/
+
+/**
+** Permet a un employé de saisir son rapport
+**/
+void add_lign_to_report(client_t client)
+{
+	int continu=-1;
+	string tempMessage= string("");
+	cin.ignore(1,'""');
+
+	
+	while (continu!=2)
+	{	  
+	  cin.ignore(1,'\n');
+	  cout<<"Saisissez votre texte : "<<endl;
+	  getline(cin,tempMessage);
+	  cout<<tempMessage<<endl;
+	  
+	  if(tempMessage.size() > sizeof(client->message)) {
+	    cout << "taille maximale buffer dépassé, les "<<sizeof(client->message)% tempMessage.size() << " restant seront ignorés"  << endl;
+      tempMessage = tempMessage.substr(sizeof(client->message));
+    }
+    else {
+      sprintf(client->message,tempMessage.c_str());
+    }
+    
+    send(client->des_client,client->message,sizeof(client->message),0);
+	  
+	  cout<<"Avez vous terminé?:   "<<endl;
+	  cout<<"1-Non"<<endl;
+	  cout<<"2-Oui"<<endl;
+	  cin.clear();
+	  cin>>continu;
+	  send(client->des_client,&continu,sizeof(int),0);
+	  
+	}
+}
+
 void disconnection(Client* client)
 {
   if(close(client->des_client) == -1) {
@@ -38,26 +82,36 @@ void disconnection(Client* client)
     cout << "Déconnexion terminée." << endl;
   }
 }
-
-
 /**
-** Permet a un employé de saisir son rapport
+*
 **/
 void write_employee_report(client_t client)
 {
-	int continu;
+  int request(-1),continu(-1);
 	
-	cout<<"saisissez votre texte";
-	cin>>client->message;	
-	cout<<client->message<<endl;
+	while(continu != 0)
+	{
+	  cout << "Début saisie rapport" << endl;
+	  cout << "1 : Ajouter une ligne au rapport" << endl;
+	  cout << "2 : Finaliser le rapport" << endl;
+	  cout << "3 : Retour au menu" << endl;
+	  cin >> request;
 	
-	send(client->des_client,client->message,sizeof(client->message),0);
-	cout<<"Avez vous terminé?"<<endl;
-	cout<<"1-Oui"<<endl;
-	cout<<"2-Non"<<endl;
-	cin>>continu;
-	send(client->des_client,&continu,sizeof(int),0);
+	  send(client->des_client,&request, sizeof(int),0);
+	  switch(request)
+    {
+      case ADD_LINES :  cout << "Demande d'ajout de ligne" << endl; 
+	        add_lign_to_report(client);
+	        break;
+	    case FINISH_REPORT : cout << "Demande de finalisation" << endl; 
+	        continu = 0;
+	    case 3 : continu = 0;
+	      	break;		
+	      default : cerr << "Erreur switch write_employee_report"<<endl;
+      }
+  }
 }
+
 
 
 /**
@@ -122,13 +176,14 @@ void* th_employee(void * param)
   cout << "1 : Saisir un rapport."<< endl;
   cout << "2 : Télécharger un rapport déjà saisi."<< endl;
   cout << "3 : Quitter" << endl;    
-  cout << "Tappez le chiffre correspondant à votre demande : ";
+  cout << "Tappez le chiffre correspondant à votre demande : ";  
   cin >> request;
+  cout << "descripteur client : "<< client->des_client << endl;
   
   if(send(client->des_client,&request,sizeof(int),0) < 1) {
     perror("Erreur envoi request");
   }
-  
+  	cin.clear();
 	switch(request)
 	{
 	case 1 : cout << "Demande saisie rapport reçue" << endl;
