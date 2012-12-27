@@ -30,7 +30,7 @@ struct Client {
 	bool claimed_report;
 	bool received_report;
 };
-typedef Client* P_Client;
+//typedef Client* P_Client;
 typedef Client* client_t;
 
 struct data {
@@ -113,12 +113,17 @@ bool verification_demande_rapport(client_t employee)
 void add_lign(client_t client)
 {
   int continu=-1;
-  while (continu!=0)
+  cout << "Début d'ajout de lignes"<< endl;
+  while (continu!=2)
   {
-    recv(client->des_client,client->message,sizeof(client->message),0);
-    Ecrit(client->message,client->name);
-    recv(client->des_client,&continu,sizeof(int),0); 
-    
+    if(recv(client->des_client,client->message,sizeof(client->message),0)==0) {
+      perror("Erreur réception");
+      break;
+    }
+    //Ecrit(client->message,client->name);
+    cout << "Ligne écrite !" << endl;
+    recv(client->des_client,&continu,sizeof(int),0);
+    cout << "Continu : "<< continu << endl;
   }
 }
 /**
@@ -134,13 +139,10 @@ void employee_report_to_pdf(client_t employee)
   
   while(continu!=0)
   {
-    cout<<"wazaaaaa"<<endl;
     if(recv(employee->des_client,&request,sizeof(int),0)==-1) {
       perror("Erreur reception report to PDF");
-      cout<<"wazaaaaa20"<<endl;
 		}
 	  else {
-	    cout<<"wazaaaaa30"<<endl;
 	    cout << "Demande reçue : "<< request << endl;
 	                        
 	    switch(request) 

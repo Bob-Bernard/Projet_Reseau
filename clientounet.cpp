@@ -36,6 +36,16 @@ typedef Client* client_t;
 * Déconnecte un client
 **/
 
+void disconnection(Client* client)
+{
+  if(close(client->des_client) == -1) {
+    perror("Erreur déconnexion");
+  }
+  else {
+    cout << "Déconnexion terminée." << endl;
+  }
+}
+
 /**
 ** Permet a un employé de saisir son rapport
 **/
@@ -43,18 +53,17 @@ void add_lign_to_report(client_t client)
 {
 	int continu=-1;
 	string tempMessage= string("");
-	cin.ignore(1,'""');
-
+  cout << "Debut ajout de ligne..." << endl;
 	
 	while (continu!=2)
 	{	  
-	  cin.ignore(1,'\n');
 	  cout<<"Saisissez votre texte : "<<endl;
+	  cin.ignore(1,'""');
 	  getline(cin,tempMessage);
-	  cout<<tempMessage<<endl;
 	  
 	  if(tempMessage.size() > sizeof(client->message)) {
-	    cout << "taille maximale buffer dépassé, les "<<sizeof(client->message)% tempMessage.size() << " restant seront ignorés"  << endl;
+	    cout << "taille maximale buffer dépassé, les "<< 
+	    sizeof(client->message)%tempMessage.size() << " restant seront ignorés"  << endl;
       tempMessage = tempMessage.substr(sizeof(client->message));
     }
     else {
@@ -69,19 +78,10 @@ void add_lign_to_report(client_t client)
 	  cin.clear();
 	  cin>>continu;
 	  send(client->des_client,&continu,sizeof(int),0);
-	  
+	  cin.ignore(1,'\n'); // vide le buffer  
 	}
 }
 
-void disconnection(Client* client)
-{
-  if(close(client->des_client) == -1) {
-    perror("Erreur déconnexion");
-  }
-  else {
-    cout << "Déconnexion terminée." << endl;
-  }
-}
 /**
 *
 **/
