@@ -26,6 +26,19 @@ struct Client {
 };
 typedef Client* client_t;
 
+/**
+* Déconnecte un client
+**/
+void disconnection(Client* client)
+{
+  if(close(client->des_client) == -1) {
+    perror("Erreur déconnexion");
+  }
+  else {
+    cout << "Déconnexion terminée." << endl;
+  }
+}
+
 
 /**
 ** Permet a un employé de saisir son rapport
@@ -33,11 +46,12 @@ typedef Client* client_t;
 void write_employee_report(client_t client)
 {
 	int continu;
-	char txt[50];
+	
 	cout<<"saisissez votre texte";
-	cin>>txt;
-	cout<<txt<<endl;
-	send(client->des_client,txt,sizeof(char[50]),0);
+	cin>>client->message;	
+	cout<<client->message<<endl;
+	
+	send(client->des_client,client->message,sizeof(client->message),0);
 	cout<<"Avez vous terminé?"<<endl;
 	cout<<"1-Oui"<<endl;
 	cout<<"2-Non"<<endl;
@@ -49,36 +63,40 @@ void write_employee_report(client_t client)
 /**
 * Gère l'envoi du rapport PDF à l'employé
 **/
-bool download_PDF(Client* client)
+bool download_PDF(client_t employee)
 {
-  int file_size(0),read(0),received_bytes(0);
-	char file_content[BUFFER_SIZE];
-	bool file_received = false;
+	int file_size(0),read(0),received_bytes(0);
+	char file_content[1024];
+	bool file_received(false);
 	FILE* pdf_file = fopen("monRapport.pdf", "wb");
+	
+	cout << " descripteur : "<< employee->des_client << endl;
 	
 	if(pdf_file != NULL) 
 	{
-	  recv(client->des_client,&file_size,sizeof(int),0);
+	  cout << "Début du téléchargement..." << endl;
+	  recv(employee->des_client,&file_size,sizeof(int),0);
 	  if(file_size == 0) { 
-	   perror("Erreur reception taille fichier"); 
+	   perror("Erreur reception taille fichier");
 	  }
-	
+	  
 	  while(received_bytes < file_size)
 	  {	
-		  read = recv(client->des_client,file_content,sizeof(file_content),0);
+		  read = recv(employee->des_client,file_content,sizeof(file_content),0);
 		  fwrite(file_content,sizeof(char),read,pdf_file);
 		  received_bytes += read;
 	  }
-	  cout << "Rapport reçu !" << endl;
+	  cout << "Rapport reçu !" << endl << endl;
 	  file_received = true;
 	  fclose(pdf_file);	
 	}
 	else { 
 	  cout << "Fichier PDF inconnu" << endl;
-	}		
-
+	}
+	
 return file_received;
 }
+
 /*
 **
 */
@@ -107,21 +125,20 @@ void* th_employee(void * param)
   cout << "Tappez le chiffre correspondant à votre demande : ";
   cin >> request;
   
-  cout << "request : " << request <<endl;
   if(send(client->des_client,&request,sizeof(int),0) < 1) {
     perror("Erreur envoi request");
   }
-  //request == -1;
-//  if(recv(client->des_client,&request,sizeof(int),0)==-1) {
-//    perror("Erreur reception report to PDF");
-//	}
+  
 	switch(request)
 	{
 	case 1 : cout << "Demande saisie rapport reçue" << endl;
 	  write_employee_report(client);
 	  break;
-	case 2 : cout << "Demande download PDF reçue" << endl;
-	  //download_PDF(client);
+	case 2 : cout << "Demande download PDF reçue !"<< client->des_client << endl;
+	  download_PDF(client);
+	  break;
+	case 3 : cout << "Quitter" << endl;
+	  disconnection(client);
 	  break;
 	default : cout << "Demande refusée" << endl;	
 	}
@@ -149,19 +166,6 @@ int authentification (client_t client)
 return statusClient;
 }
 
-
-/**
-* Déconnecte un client
-**/
-void disconnection(Client* client)
-{
-  if(close(client->des_client) == -1) {
-    perror("Erreur déconnexion");
-  }
-  else {
-    cout << "Déconnexion terminée." << endl;
-  }
-}
 
 
 int main (int args, char* argv[] ) {

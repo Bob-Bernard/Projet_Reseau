@@ -9,6 +9,40 @@
 #include <sys/types.h>
 #include <sys/socket.h>
 
+void envoi_rapport(int descripteur)
+{
+	int file_size(0),read(-1);
+	const char* pdf_path = "sujet.pdf";
+	FILE* pdf_file = fopen(pdf_path, "rb");
+	char file_content[1024];
+
+	if (pdf_file != NULL)
+	{
+		cout << "Rapport ouvert !" << endl;
+		fseek(pdf_file,0,SEEK_END);
+		file_size = ftell(pdf_file);
+		rewind(pdf_file);		
+		send(descripteur,&file_size,sizeof(int),0);
+		  
+		while(read != 0)
+		{
+		  read = fread(file_content,sizeof(char),1024,pdf_file);		  
+    	send(descripteur, file_content,read,0);
+    }
+    
+    cout << "Rapport envoyé !" << endl;
+    if(fclose (pdf_file) != 0) {
+      perror("Erreur fclose()");
+    }
+  }
+  else {
+  	perror("Rapport PDF inconnu");
+	}
+	
+}
+
+
+
 
 int main(int args,char* argv[]) {
 	int port, desCurrentClient, DesServer, localBR, nb_client(0);
@@ -45,34 +79,25 @@ int main(int args,char* argv[]) {
 	if(desCurrentClient == -1)
 		perror("   accept ");
 
-	int file_size(0),read(-1);
-	const char* pdf_path = "sujet.pdf";
-	FILE* pdf_file = fopen(pdf_path, "rb");
-	char file_content[1024];
+int request(0);
 
-	if (pdf_file != NULL)
-	{
-		cout << "Rapport ouvert !" << endl;
-		fseek(pdf_file,0,SEEK_END);
-		file_size = ftell(pdf_file);
-		rewind(pdf_file);		
-		send(desCurrentClient,&file_size,sizeof(int),0);
-		  
-		while(read != 0)
-		{
-		  read = fread(file_content,sizeof(char),1024,pdf_file);		  
-    	send(desCurrentClient, file_content,read,0);
+  if(recv(desCurrentClient,&request,sizeof(int),0)==-1)
+      perror("Erreur reception employee management");
+      
+    switch(request) {
+      case 1 :  cout << "employee go to report pdf"<<endl;
+        //employee_report_to_pdf(desCurrentClient);
+        break;
+      case 2 :  cout << "employee go to download pdf"<<endl;
+        envoi_rapport(desCurrentClient);
+        break;
+      case 3 : request = 0; 
+        cout << "employee quit" << endl;
+        break;
+      default : cout << "Erreur de saisie, veuillez recommencer" << endl;
     }
-    
-    cout << "Rapport envoyé !" << endl;
-    if(fclose (pdf_file) != 0) {
-      perror("Erreur fclose()");
-    }
-  }
-  else {
-  	perror("Rapport PDF inconnu");
-	}
-	
+  
+  	
 	close(desCurrentClient);
 	close(DesServer);
 return 1;

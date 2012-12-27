@@ -15,7 +15,7 @@
 
 
 #define TAILLEBUF 100
-#define FICHIERIMAGE "../libs/vuillemin.jpg"
+#define FICHIERIMAGE "libs/vuillemin.jpg"
 
 int OuvreRapport(const char *employe) {
   int res, r;

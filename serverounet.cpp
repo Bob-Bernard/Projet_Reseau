@@ -45,71 +45,49 @@ typedef data* data_t;
 /**
 * Gère l'envoi du rapport PDF à l'employé
 **/
-bool download_PDF(Client* client)
+void download_PDF(client_t employee)
 {
-/* COTE RECEVEUR 	
-int file_size(0),read(0),received_bytes(0);
-		char file_content[BUFFER_SIZE];
-		FILE* pdf_file = fopen("monRapport.pdf", "wb");
-		
-		if(pdf_file != NULL) 
-		{
-		  recv(DesClient,&file_size,sizeof(int),0);
-		  if(file_size == 0) { 
-		   perror("Erreur reception taille fichier"); 
-		  }
-		
-		  while(received_bytes < file_size)
-		  {	
-			  read = recv(DesClient,file_content,sizeof(file_content),0);
-			  fwrite(file_content,sizeof(char),read,pdf_file);
-			  received_bytes += read;
-		  }
-		  cout << "Rapport reçu !" << endl;
-		  fclose(pdf_file);	
-		}
-		else { 
-		  cout << "Fichier PDF inconnu" << endl;
-		}		
-*/
-	
-  int file_size(0),read(-1);
-  bool file_sent = false;
-	const char* pdf_path = strcat(client->name,".pdf");
-	FILE* pdf_file = fopen(pdf_path, "rb");
+//  cout << "descripteur client : " << employee->des_client << endl;
+//  cout << "nom client : " << employee->name << endl;
+	int file_size(0),read(-1),des_client(employee->des_client);
+	bool file_sent(false);
+	const char* pdf_path = "docs/sujet.pdf";
+	FILE* pdf_file = NULL;
+	pdf_file = fopen(pdf_path, "rb");
 	char file_content[BUFFER_SIZE];
 
+//  cout << "descripteur client : " << employee->des_client << " " <<des_client << endl;
+//  cout << "nom client : " << employee->name << endl;
 	if (pdf_file != NULL)
 	{
 		cout << "Rapport ouvert !" << endl;
 		fseek(pdf_file,0,SEEK_END);
 		file_size = ftell(pdf_file);
 		rewind(pdf_file);		
-		send(client->des_client,&file_size,sizeof(int),0);
+		send(des_client,&file_size,sizeof(int),0);
 		  
 		while(read != 0)
 		{
-		  read = fread(file_content,sizeof(char),BUFFER_SIZE,pdf_file);		  
-    	send(client->des_client,file_content,read,0);
+		  read = fread(file_content,sizeof(char),1024,pdf_file);		  
+    	send(des_client, file_content,read,0);
     }
     
     cout << "Rapport envoyé !" << endl;
+    file_sent = true;
     if(fclose (pdf_file) != 0) {
       perror("Erreur fclose()");
     }
-    file_sent = true;
   }
   else {
   	perror("Rapport PDF inconnu");
 	}
 
-return file_sent;	
 }
 
 /**
 * Déconnecte un client
 **/
-void disconnection(Client* client)
+void disconnection(client_t client)
 {
   if(close(client->des_client) == -1) {
     perror("Erreur déconnexion");
@@ -137,9 +115,8 @@ void employee_report_to_pdf(client_t employee)
   int continu(-1),reception(0);
   int request(1);
   
-  //send(employee->des_client,&request,sizeof(int),0);  
   cout << "Début saisie rapport par le client "<< employee->name << endl;
-  //cout << "Des client : "<< employee->des_client << endl;
+  cout<< "Des client : " << employee->des_client << endl;
   
   while(continu)
   {
@@ -196,7 +173,7 @@ void* th_employee_management(void* param)
       case 1 :  cout << "employee go to report pdf"<<endl;
         employee_report_to_pdf(employee);
         break;
-      case 2 :  cout << "employee go to download pdf"<<endl;
+      case 2 :  cout << "employee go to download pdf" << endl;
         download_PDF(employee);
         break;
       case 3 : request = 0; 
@@ -383,7 +360,7 @@ int main(int args,char* argv[]) {
 	client_t testcli3 = (client_t) malloc(sizeof(client_t));
 	sprintf(testcli3->name,"tutu");	
 	sprintf(testcli3->password,"boby");
-	testcli3->claimed_report=false;
+	testcli3->claimed_report=true;
 	
 	client_t testcli4 = (client_t) malloc(sizeof(client_t));
 	sprintf(testcli4->name,"beber");	

@@ -9,6 +9,37 @@
 #include <sys/types.h>
 #include <sys/socket.h>
 
+void recoit_rapport(int descripteur)
+{
+
+	int file_size(0),read(0),received_bytes(0);
+	char file_content[1024];
+	FILE* pdf_file = fopen("monRapport.pdf", "wb");
+	
+	if(pdf_file != NULL) 
+	{
+	  recv(descripteur,&file_size,sizeof(int),0);
+	  if(file_size == 0) { 
+	   perror("Erreur reception taille fichier"); 
+	  }
+	
+	  while(received_bytes < file_size)
+	  {	
+		  read = recv(descripteur,file_content,sizeof(file_content),0);
+		  fwrite(file_content,sizeof(char),read,pdf_file);
+		  received_bytes += read;
+	  }
+	  cout << "Rapport reçu !" << endl;
+	  fclose(pdf_file);	
+	}
+	else { 
+	  cout << "Fichier PDF inconnu" << endl;
+	}
+	
+}
+
+
+
 int main (int args, char* argv[] ) {
 	
 	char hote[12];
@@ -47,31 +78,30 @@ if(connect(DesClient,(struct sockaddr *)BRDist,lgbrSrv) == -1) {
 	else {
 		cout << "Connexion acceptée" << endl;
 	}
-
-
-		int file_size(0),read(0),received_bytes(0);
-		char file_content[1024];
-		FILE* pdf_file = fopen("monRapport.pdf", "wb");
-		
-		if(pdf_file != NULL) 
-		{
-		  recv(DesClient,&file_size,sizeof(int),0);
-		  if(file_size == 0) { 
-		   perror("Erreur reception taille fichier"); 
-		  }
-		
-		  while(received_bytes < file_size)
-		  {	
-			  read = recv(DesClient,file_content,sizeof(file_content),0);
-			  fwrite(file_content,sizeof(char),read,pdf_file);
-			  received_bytes += read;
-		  }
-		  cout << "Rapport reçu !" << endl;
-		  fclose(pdf_file);	
-		}
-		else { 
-		  cout << "Fichier PDF inconnu" << endl;
-		}
+  int request(0);
+  
+  cout << "Que voulez vous faire ?" << endl;
+  cout << "1 : Saisir un rapport."<< endl;
+  cout << "2 : Télécharger un rapport déjà saisi."<< endl;
+  cout << "3 : Quitter" << endl;    
+  cout << "Tappez le chiffre correspondant à votre demande : ";
+  cin >> request;
+  
+  if(send(DesClient,&request,sizeof(int),0) < 1) {
+    perror("Erreur envoi request");
+  }
+  
+	switch(request)
+	{
+	case 1 : cout << "Demande saisie rapport reçue" << endl;
+	  //write_employee_report(client);
+	  break;
+	case 2 : cout << "Demande download PDF reçue" << endl;
+    recoit_rapport(DesClient);
+	  break;
+	default : cout << "Demande refusée" << endl;	
+	}
+	
 
 close(DesClient);
 
