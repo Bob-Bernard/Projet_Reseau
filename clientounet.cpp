@@ -19,6 +19,13 @@
 #define ADD_LINES 1
 #define FINISH_REPORT 2
 
+#define ADD_CLAIMED_REPORT 1
+#define DL_REPORT 2
+
+#define REPORT_READY 1
+#define REPORT_WAITING 2
+#define CLIENT_NOT_FOUND 3
+
 using namespace std;
 
 
@@ -110,6 +117,7 @@ void write_employee_report(client_t client)
 	      	break;		
 	      default : cerr << "Erreur switch write_employee_report"<<endl;
       }
+    cin.clear();
   }
 }
 
@@ -152,12 +160,92 @@ bool download_PDF(client_t employee)
 return file_received;
 }
 
+/**
+*
+**/
+void download_report_employee(client_t controller)
+{
+  int request(-1);
+  char employee_name[50];
+  bool found(false);
+
+  cout << "Veuillez saisir le nom de l'employé dont vous voulez télécharger le rapport PDF"<< endl;
+  cin >> employee_name;
+  send(controller->des_client,employee_name,sizeof(employee_name),0);
+  
+  cout << "Recherche de l'employé..." << endl;
+  recv(controller->des_client,&request,sizeof(int),0);
+  switch(request)
+  {
+    case REPORT_READY : cout << "L'employee a envoyé son rapport, lancement du dl"<<endl;
+	    download_PDF(controller);
+	    break;
+	  case REPORT_WAITING : cout << "L'employé n'a pas encore envoyé son rapport" << endl;
+	    break;
+	  case CLIENT_NOT_FOUND : cerr<< "L'employé n'a pas été trouvé." << endl;
+	    break;
+	  default: cerr<< "Erreur switch download report" << endl;
+  }
+  
+}
+
+
+
+/**
+*
+**/
+void add_claimed_report(client_t controller)
+{
+  char employee_name[50];
+  bool found(false);
+  
+  cout << "Saisissez le nom de l'employé qui doit envoyé un rapport" << endl;
+  cin >> employee_name;
+  send(controller->des_client,employee_name,sizeof(employee_name),0);
+  cout << "Recherche de l'employé..." <<endl;
+  
+  recv(controller->des_client,&found,sizeof(bool),0);
+  if(found)
+  {
+    cout<<"L'employé "<<employee_name<<" doit désormais envoyé un rapport !" << endl;
+  }
+  else 
+  {
+    cerr << "L'employé "<< employee_name 
+    << " n'a pas été trouvé dans la liste des employés" << endl;  
+  }
+
+}
+
 /*
 **
 */
-void* th_controller()
+void* th_controller(void* param)
 {
-
+  client_t controller = (client_t) param;
+  int request(-1),continu(-1);
+  
+  while(continu != 0)
+  { 
+    cout << "Que voulez vous faire ?" <<endl;
+    cout << "1 : Demande à un employé un rapport" <<endl;
+    cout << "2 : Télécharger un rapport PDF d'un employé" <<endl;
+    cin >> request;
+    send(controller->des_client,&request,sizeof(int),0);
+    
+    switch(request)
+    {
+      case ADD_CLAIMED_REPORT : cout << "Demande d'ajout une demande de rapport" << endl;
+        add_claimed_report(controller);
+        break;
+      case DL_REPORT : cout << "Demande de téléchargement d'un rapport PDF"<<endl;
+        download_report_employee(controller);
+        break;
+      default : cerr << "Erreur swith th_controller_management" << endl; 
+        continu = 0;
+    }
+  cin.clear();
+  }
 
 pthread_exit(NULL);
 }
@@ -280,7 +368,9 @@ int main (int args, char* argv[] ) {
         pthread_join(idThread,NULL);
         break;
       case CONTROLEUR_OK : cout << "Vous êtes connecté en tant que controleur" << endl;
-        // lancement fonction controleur
+        if(pthread_create(&idThread,NULL,th_controller,(void*)client)!= 0) {
+          perror("Erreur creation thread client");
+        }
         pthread_join(idThread,NULL);
         break;
       default : cerr << "Switch error after authentification()"<< endl;

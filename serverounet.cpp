@@ -21,6 +21,13 @@
 #define ADD_LINES 1
 #define FINISH_REPORT 2
 
+#define ADD_CLAIMED_REPORT 1
+#define DL_REPORT 2
+
+#define REPORT_READY 1
+#define REPORT_WAITING 2
+#define CLIENT_NOT_FOUND 3
+
 struct Client {
   char message[BUFFER_SIZE];
 	int des_client;
@@ -41,6 +48,11 @@ struct data {
 };
 //typedef data* P_data;
 typedef data* data_t;
+
+struct controller_infos {
+   client_t controller;
+   data_t data;  
+};
 
 /**
 * Gère l'envoi du rapport PDF à l'employé
@@ -218,6 +230,119 @@ pthread_exit(NULL);
 
 
 /**
+* si le nom de l'employé existe et doit envoyer rapport, lance le téléchargement.
+**/
+void download_report_employee(int des_controller, int nb_client, 
+client_t listeClientsEntreprise[]) 
+{
+  int request(-1),indice(0);
+  char employee_name[50];
+  bool found(false);
+  
+  recv(des_controller,employee_name,sizeof(employee_name),0);
+  cout << "Recherche de l'employé : "<< employee_name << endl;
+  
+  while (indice < nb_client && !found)
+	{		  
+		if(strcmp(listeClientsEntreprise[indice]->name,employee_name)==0)
+		{
+		  cout << "L'employé trouvé !"<< endl;
+	    if(listeClientsEntreprise[indice]->received_report = true) 
+	    {
+	      request = REPORT_READY;
+	      send(des_controller,&request,sizeof(int),0);
+	      cout << "L'employee a envoyé son rapport, lancement du dl"<<endl;
+	      download_PDF(listeClientsEntreprise[indice]);
+	    }
+	    else {
+	      request = REPORT_WAITING;
+	      cout << "L'employé n'a pas encore envoyé son rapport" << endl;
+	      send(des_controller,&request,sizeof(int),0);	      
+	    }
+	    found = true;
+    }
+    indice++;
+  }
+  
+  if(!found) {
+    request = CLIENT_NOT_FOUND;
+    send(des_controller,&request,sizeof(int),0);
+    cerr << "L'employé "<< employee_name<< " n'a pas été trouvé"<<endl;
+  }
+
+}
+
+/**
+* Permet de modifie la valeur claimed_report d'un client désigné par son nom
+**/
+void add_claimed_report(int des_controller, int nb_client, 
+client_t listeClientsEntreprise[])
+{
+  char employee_name[50];
+  bool found(false);
+  int indice(0);
+  
+  // réception du nom de l'employé
+  recv(des_controller,&employee_name,sizeof(employee_name),0);
+  cout<< "Début recherche de l'employé : "<< employee_name<< "..." << endl;
+  
+  while (indice < nb_client && !found)
+	{		  
+		if(strcmp(listeClientsEntreprise[indice]->name,employee_name)==0)
+		{
+		  cout << "L'employé trouvé : "<< listeClientsEntreprise[indice]->name << endl;
+		  found = true;
+		  // accès concurrant
+      listeClientsEntreprise[indice]->claimed_report = true;
+      send(des_controller,&found,sizeof(bool),0);
+      cout << "Un rapport lui a été correctement demandé !" << endl;
+    }
+    indice++;
+  }
+  
+  if(!found) {
+    send(des_controller,&found,sizeof(bool),0);
+    cerr << "L'employé "<< employee_name<< " n'a pas été trouvé"<<endl;
+  }
+  
+}
+
+
+/**
+*
+**/
+void * th_controller_management(void* param) 
+{
+  struct controller_infos* controller_infos = (struct controller_infos*) param;
+  data_t data = controller_infos->data;
+  int request(-1),des_controller(controller_infos->controller->des_client);
+  int continu(-1);
+  
+  while(continu != 0)
+  {
+    // reception de la demande du controller
+    recv(des_controller,&request,sizeof(int),0);
+    
+    switch(request)
+    {
+      case ADD_CLAIMED_REPORT : cout << "Demande d'ajout une demande de rapport" << endl;
+        add_claimed_report(des_controller,*data->nb_client,data->ptr_client_list);
+        break;
+      case DL_REPORT : cout << "Demande de téléchargement d'un rapport PDF"<<endl;
+        download_report_employee(des_controller,*data->nb_client,
+        data->ptr_client_list);
+        break;
+      default : cerr << "Erreur swith th_controller_management" << endl; 
+        continu=0; 
+    }
+    cin.clear();
+  }  
+
+	pthread_exit(NULL);
+}
+
+
+/**
 *
 **/
 void * th_verif_presence_rapport(void* param) 
@@ -314,6 +439,7 @@ void* th_new_client(void* param)
   else {
     perror("Error : param value");
   }
+  struct controller_infos controller_infos;
  	int* infos_client(NULL);
   int statusClient(-1);
   
@@ -341,11 +467,19 @@ void* th_new_client(void* param)
         if(pthread_create(&idThread,NULL,th_employee_management,
         (void*)data->ptr_client_list[infos_client[1]] )!= 0)  
         {
-          perror("Erreur création thread");
+          perror("Erreur création thread employee");
         }
+        pthread_join(idThread, NULL);
         break;			      
-      case CONTROLEUR_OK : cout << "C'est un controleur !"<< endl; 
-        // lancement thread controleur
+      case CONTROLEUR_OK : cout << "C'est un controleur !"<< endl;
+        controller_infos.controller = data->ptr_client_list[infos_client[1]];
+        controller_infos.data = data;
+         if(pthread_create(&idThread,NULL,th_controller_management,
+        (void*)&controller_infos)!= 0)  
+        {
+          perror("Erreur création thread controller");
+        }
+        pthread_join(idThread, NULL);
         break;
       default : perror("Petit souci switch(statusClient)");
         close(data->descripteur);
@@ -353,9 +487,9 @@ void* th_new_client(void* param)
     }
     //cout << "Compteur nombre connectés incrémenté !" << endl;
     //data->nb_connected_client++; // gestion d'accès concurrant ?
+    if(infos_client != NULL)
+    free(infos_client);    
   }
-  if(infos_client != NULL)
-  free(infos_client);
   
   pthread_exit(NULL);
 }
@@ -367,7 +501,7 @@ int main(int args,char* argv[]) {
 	struct sockaddr_in brCv;
 	socklen_t sizeLocalBr;
 	
-	int nb_client = 4;
+	int nb_client = 5;
   client_t listeClientsEntreprise[nb_client];
 	
 // On définit un pointeur sur la structure data
@@ -395,11 +529,17 @@ int main(int args,char* argv[]) {
 	sprintf(testcli4->name,"beber");	
 	sprintf(testcli4->password,"boby");
 	testcli4->claimed_report=false;
-
+	
+	client_t testController = (client_t) malloc(sizeof(client_t));
+	sprintf(testController->name,"haddock"); // enfin lui !
+	sprintf(testController->password,"boby");
+  testController->controller=true;
+  
 	listeClientsEntreprise[0] = testcli;
 	listeClientsEntreprise[1] = testcli2;
 	listeClientsEntreprise[2] = testcli3;
-	listeClientsEntreprise[3] = testcli4;	
+	listeClientsEntreprise[3] = testcli4;
+	listeClientsEntreprise[4] = testController;
 	data->nb_client = &nb_client;
 
 		
