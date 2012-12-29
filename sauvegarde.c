@@ -1,6 +1,5 @@
 // compilation : gcc `pkg-config --cflags --libs gtk+-2.0` sauvegarde.c -o sauvegarde
 
-#include "sauvegarde.h"
 #include <stdlib.h>
 #include <stdio.h>
 #include <sys/types.h>
@@ -11,11 +10,10 @@
 #include <errno.h>
 #include <glib.h>
 #include <time.h>
-#include <locale.h>
-
+ #include <locale.h>
 
 #define TAILLEBUF 100
-#define FICHIERIMAGE "libs/vuillemin.jpg"
+#define FICHIERIMAGE "vuillemin.jpg"
 
 int OuvreRapport(const char *employe) {
   int res, r;
@@ -50,15 +48,14 @@ int OuvreRapport(const char *employe) {
   close(res);
   g_string_free(s, TRUE);
 
-// make crash the pdf creation
-/*  res = open(FICHIERIMAGE, O_RDONLY);*/
-/*  if (res == -1) {*/
-/*    fprintf(stderr, "problème à l'ouverture du fichier image %s\n",*/
-/*	    FICHIERIMAGE);*/
-/*    perror("");*/
-/*    return -1;*/
-/*  }*/
-/*  close(res);*/
+  res = open(FICHIERIMAGE, O_RDONLY);
+  if (res == -1) {
+    fprintf(stderr, "problème à l'ouverture du fichier image %s\n",
+	    FICHIERIMAGE);
+    perror("");
+    return -1;
+  }
+  close(res);
   
 
   s = g_string_new(employe);
@@ -68,7 +65,7 @@ int OuvreRapport(const char *employe) {
   g_string_free(s, TRUE);
 
   fprintf(f, "\\documentclass{article}\n\\usepackage[utf8]{inputenc}\n\\usepackage[frenchb]{babel}\n\\usepackage{graphics,graphicx}\n");
-  fprintf(f, "\\title{Rapport d'activité}\n\\date{Université Montpellier 2 \\\\ \\mbox{}\\\\ \\mbox{}\\\\\\includegraphics[width=13cm]{%s}}\n",FICHIERIMAGE);
+  fprintf(f, "\\title{Rapport d'activité}\n\\date{Université Montpellier 2 \\\\ \\mbox{}\\\\ \\mbox{}\\\\\\includegraphics[width=13cm]{../vuillemin.jpg}}\n");
   fprintf(f, "\\author{%s}", employe);
   fprintf(f, "\\begin{document}\n\\maketitle\n\\newpage\n");
   fprintf(f, "\\include{%s}\n", employe);
@@ -164,15 +161,27 @@ int Ecrit(const char *message, const char *employe) {
   fclose(f);
   return 0;
 }
+  
 
-/*int main(int argc, char *argv[]){*/
-/*  int fd, res;*/
-/*  char buff[100];*/
-/*  */
-/*  Ecrit("Bloc infos 1", "Employe");*/
-/*  Ecrit("Bloc infos 2", "Employe");*/
-/*  */
-/*  fd = OuvreRapport("Employe");*/
+int main(int argc, char *argv[]){
+  int fd, res;
+  char buff[100];
+  const char * employee_name;
+  const char * employee_message;
+  int totem= atoi(argv[1]);
+  switch (totem)
+  {
+    case 1 :
+    employee_message = argv[2];
+    employee_name = argv[3];
+    Ecrit(employee_message, employee_name);
+    break;
+    
+    case 2 :
+    employee_name = argv[2];
+    fd = OuvreRapport(employee_name);
+    break;
+  }
 
-/*  return 0;*/
-/*} */
+  return 0;
+} 
