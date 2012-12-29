@@ -173,12 +173,12 @@ void employee_report_to_pdf(client_t employee)
 		    case ADD_LINES :  cout << "Demande d'ajout de ligne" << endl;
 		      if(recv(employee->des_client,employee->message,sizeof(employee->message),0)!=-1)
 		      {
-            execl("sauvegarde","sauvegarde" , "1" ,employee->message,employee->name,NULL);
-  	        cout << "Ligne ajoutée !" << endl;
+		       execl("sauvegarde","sauvegarde" , "1" ,employee->message,employee->name, NULL);
+  	       cout << "Ligne ajoutée !" << endl;
   	       }
 		      break;
 		    case FINISH_REPORT : cout << "Demande de finalisation" << endl; 
-		      execl("sauvegarde","sauvegarde", "2",employee->name,NULL);      
+		      execl("sauvegarde","sauvegarde" , "2" ,employee->name, NULL);      
 		    	break;
 		    case 3 : cout << "Quit" << endl;
 		      continu = 0;
