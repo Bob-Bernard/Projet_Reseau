@@ -1,6 +1,6 @@
 #include "libs/sock.h"
 #include "libs/sockdist.h"
-#include "libs/sauvegarde.h"
+#include "sauvegarde.h"
 
 #include <string>
 #include <cstring>
@@ -120,24 +120,25 @@ bool verification_demande_rapport(client_t employee)
 /**
 * Ajoute une ligne dans le rapport
 **/
-void add_lign(client_t client)
-{
-  int continu=-1;
-  cout << "Début d'ajout de lignes"<< endl;
-  while (continu!=2)
-  {
-    if(recv(client->des_client,client->message,sizeof(client->message),0)==0) {
-      perror("Erreur réception");
-      break;
-    }
-    cout <<"Message reçu : " << client->message << endl;
-    cout <<"Client name : " << client->name <<endl;
-    Ecrit("bilboquet","haddock");
-    cout << "Ligne écrite !" << endl;
-    recv(client->des_client,&continu,sizeof(int),0);
-    cout << "Continu : "<< continu << endl;
-  }
-}
+//void add_lign(client_t client)
+//{
+//  int continu=-1;
+//  cout << "Début d'ajout de lignes"<< endl;
+//  while (continu!=2)
+//  {
+//    if(recv(client->des_client,client->message,sizeof(client->message),0)==0) {
+//      perror("Erreur réception");
+//      break;
+//    }
+//    cout <<"Message reçu : " << client->message << endl;
+//    cout <<"Client name : " << client->name <<endl;
+//    Ecrit("bilboquet","haddock");
+//    cout << "Ligne écrite !" << endl;
+//    recv(client->des_client,&continu,sizeof(int),0);
+//    cout << "Continu : "<< continu << endl;
+//  }
+//}
+
 /**
 * Réception d'un rapport que doit envoyer un employé
 **/
@@ -170,14 +171,12 @@ void employee_report_to_pdf(client_t employee)
 		    case FINISH_REPORT : cout << "Demande de finalisation" << endl; 
 		      execl("sauvegarde","sauvegarde" , "2" ,employee->name, NULL);      
 		    	break;
-		    case : cout << "Quit" << endl;
+		    case 3 : cout << "Quit" << endl;
 		      continu = 0;
 		    default : cerr << "Erreur switch reportToPDF"<<endl;
 	    }	
     }
   } // end loop
-  
-}
   
 }
 
