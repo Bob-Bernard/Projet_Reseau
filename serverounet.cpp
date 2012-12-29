@@ -37,7 +37,6 @@ struct Client {
 	bool claimed_report;
 	bool received_report;
 };
-//typedef Client* P_Client;
 typedef Client* client_t;
 
 struct data {
@@ -46,7 +45,6 @@ struct data {
   int* nb_connected_client;
   int* nb_client;
 };
-//typedef data* P_data;
 typedef data* data_t;
 
 struct controller_infos {
@@ -158,26 +156,28 @@ void employee_report_to_pdf(client_t employee)
 		}
 	  else {
 	    cout << "Demande reçue : "<< request << endl;
-	                        
+
 	    switch(request) 
 	    {		   
 		    case ADD_LINES :  cout << "Demande d'ajout de ligne" << endl;
-		      recv(employee->des_client,employee->message,sizeof(employee->message),0);
-  	       //Ecrit(employee->message,employee->name);
-  	       Ecrit("turlultuuthjtu","tata");
+		      if(recv(employee->des_client,employee->message,sizeof(employee->message),0)!=-1)
+		      {
+            execl("sauvegarde","sauvegarde" , "1" ,employee->message , 
+            employee->name, NULL);
   	       cout << "Ligne ajoutée !" << endl;
-  	       
-		      //add_lign(employee);
-		      // lancement fonction ajoute ligne rapport
+  	       }
 		      break;
 		    case FINISH_REPORT : cout << "Demande de finalisation" << endl; 
+		      execl("sauvegarde","sauvegarde" , "2" ,employee->name, NULL);      
+		    	break;
+		    case : cout << "Quit" << endl;
 		      continu = 0;
-		      // lancement OuvreRapport
-		    	break;	
 		    default : cerr << "Erreur switch reportToPDF"<<endl;
 	    }	
     }
   } // end loop
+  
+}
   
 }
 
@@ -202,8 +202,6 @@ void* th_employee_management(void* param)
   
   cout << endl<< "Employe management : " << employee->name << endl;
   cout<< "Des client : " << employee->des_client << endl;
-//  Ecrit("tutu","tata");
-//  Ecrit(employee->message,employee->name);
   
   while(continu != 0)
   {
