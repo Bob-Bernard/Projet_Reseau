@@ -225,6 +225,7 @@ void* th_controller(void* param)
     cout << endl << "Que voulez vous faire ?" <<endl;
     cout << "1 : Demande à un employé un rapport" <<endl;
     cout << "2 : Télécharger un rapport PDF d'un employé" <<endl;
+    cout << "3 : Quitter" << endl;
     cin >> request;
     send(controller->des_client,&request,sizeof(int),0);
     
@@ -235,6 +236,9 @@ void* th_controller(void* param)
         break;
       case DL_REPORT : cout << "Demande de téléchargement d'un rapport PDF"<<endl;
         download_report_employee(controller);
+        break;
+      case 3 : cout << "Le controlleur quitte" << endl;
+        continu = 0;
         break;
       default : cerr << "Erreur swith th_controller_management" << endl; 
         continu = 0;
@@ -343,7 +347,7 @@ int main (int args, char* argv[] ) {
     perror("Erreur de connexion");
   }
   else {
-    cout << "Connecté au server !" << endl;
+    cout << "Connecté au server !" << endl<< endl;
     statusClient = authentification(client);
     switch(statusClient) 
     {

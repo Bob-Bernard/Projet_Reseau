@@ -33,12 +33,10 @@
 
 struct Client {
   char message[BUFFER_SIZE];
-	int des_client;
+	int des_client, received_report;
 	char name[50];
 	char password[30];
-	bool controller;
-	bool claimed_report;
-	int received_report;
+	bool controller, claimed_report;
 };
 typedef Client* client_t;
 
@@ -61,14 +59,18 @@ pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
 /**
 * Modifie le status du rapport du client si un controller lui en a demandé un.
 **/
-void update_employee_report_status(client_t employee)
+void update_employee_report_status(client_t employee,int fin)
 {  
+  cout << employee->claimed_report << " | " << employee->received_report<<endl;
    if(employee->claimed_report)
    {
       switch(employee->received_report)
       {
         case 0 : 
   // le rapport a été saisi mais l'employé est toujours connecté
+          if(fin == NULL) {
+            break;
+          }
           pthread_mutex_lock(&mutex);
             employee->received_report = REPORT_READY_STILL_CONNECTED;
           pthread_mutex_unlock(&mutex);
@@ -82,23 +84,26 @@ void update_employee_report_status(client_t employee)
           break;
         default : cerr << "Erreur update report status" << endl;      
       }
-   }
+      cout << employee->claimed_report << " | " << employee->received_report<<endl;
+   }   
 }
 
 /**
 * Gère l'envoi du rapport PDF à l'employé
 **/
-bool download_PDF(client_t employee)
+bool download_PDF(client_t employee, int des_controller)
 {
-  cout << employee->des_client << " | " << employee->name<< endl;
+  cout << employee->des_client << " / " << employee->name << endl;
 	int file_size(0),read(-1),des_client(employee->des_client);
+	if(des_controller != -1) {	
+	  des_client = des_controller;
+  }
 	bool file_sent(false);
-  char pdf_path[30],employee_name[50];
+  char pdf_path[30],employee_name[50],file_content[BUFFER_SIZE];  
   sprintf(employee_name,employee->name);
-	sprintf(pdf_path,"%s/temp.pdf",employee->name);	  
-	FILE* pdf_file = fopen((const char*)pdf_path, "rb");
-	char file_content[BUFFER_SIZE];
-  
+	sprintf(pdf_path,"%s/temp.pdf",employee->name);
+	cout << pdf_path << endl;
+	FILE* pdf_file = fopen((const char*)pdf_path, "rb"); 
 
 	if (pdf_file != NULL)
 	{
@@ -110,7 +115,7 @@ bool download_PDF(client_t employee)
 		  
 		while(read != 0)
 		{
-		  read = fread(file_content,sizeof(char),1024,pdf_file);		  
+		  read = fread(file_content,sizeof(char),sizeof(file_content),pdf_file);		  
     	send(des_client, file_content,read,0);
     }
     
@@ -154,7 +159,7 @@ void disconnection(client_t client)
     perror("Erreur déconnexion");
   }
   else {
-    cout << "Déconnexion terminée." << endl;
+    cout << "Client "<< client->name <<  " déconnecté !" << endl;
   }
 }
 
@@ -199,7 +204,7 @@ void employee_report_to_pdf(client_t employee)
         if(fork()==0) {
           execl("sauvegarde","sauvegarde" , "2" ,employee->name, NULL);
         }
-        //update_employee_report_status(employee);
+        update_employee_report_status(employee,1);
         continu = 0;
       	break;
       	
@@ -213,16 +218,6 @@ void employee_report_to_pdf(client_t employee)
 } 
   
 
-/**
-* Reception de la liste d'employés devant envoyer un rapport
-**/
-void* th_Recieved_Empl_List(void* param)
-{
-
-pthread_exit(NULL);
-}
-
-
 
 /**
 * Traitement d'une demande d'envoie de rapport d'un employé
@@ -233,7 +228,6 @@ void* th_employee_management(void* param)
   int request(-1),continu(-1);
   
   cout << endl<< "Employe management : " << employee->name << endl;
-  cout<< "Des client : " << employee->des_client << endl;
   
   while(continu != 0)
   {
@@ -245,20 +239,20 @@ void* th_employee_management(void* param)
     }
       
     switch(request) {
-      case 1 :  cout << "employee go to report pdf"<<endl;
+      case 1 :  cout << "L'employé va saisir un rapport..."<<endl;
         employee_report_to_pdf(employee);
         break;
-      case 2 :  cout << "employee go to download pdf" << endl;
-        download_PDF(employee);
+      case 2 :  cout << "L'employé va télécharger son rapport" << endl;
+        download_PDF(employee,-1);
         break;
       case 3 : continu = 0; 
-        cout << "employee quit" << endl;
+        cout << "L'employé quitte" << endl;
         break;
       default : cerr << "Erreur switch employee management" << endl;
     }
     
   }
-  update_employee_report_status(employee);
+  update_employee_report_status(employee,NULL);
   disconnection(employee);
 
 pthread_exit(NULL);
@@ -288,7 +282,7 @@ client_t listeClientsEntreprise[])
 	      request = REPORT_READY;
 	      send(des_controller,&request,sizeof(int),0);
 	      cout << "L'employee a envoyé son rapport, lancement du dl"<<endl;
-	      download_PDF(listeClientsEntreprise[indice]);
+	      download_PDF(listeClientsEntreprise[indice],des_controller);
 	    }
 	    else {
 	      request = REPORT_WAITING;
@@ -367,8 +361,7 @@ void * th_controller_management(void* param)
         add_claimed_report(des_controller,*data->nb_client,data->ptr_client_list);
         break;
       case DL_REPORT : cout << "Demande de téléchargement d'un rapport PDF"<<endl;
-        download_report_employee(des_controller,*data->nb_client,
-        data->ptr_client_list);
+        download_report_employee(des_controller,*data->nb_client,data->ptr_client_list);
         break;
       default : cerr << "Erreur swith th_controller_management" << endl; 
         continu=0; 
@@ -404,10 +397,7 @@ int* isClient(Client client, int* nb_client, client_t listeClientsEntreprise[])
 	infos_client[1]= indice;
 		
 	while (indice < *nb_client && !found)
-	{
-	  //cout << "indice courant : " << indice <<endl;
-	  cout << listeClientsEntreprise[indice]->name<< " == " << client.name<< endl;
-	  
+	{	  
 		if(strcmp(listeClientsEntreprise[indice]->name,client.name)==0)
 		{
 			if(listeClientsEntreprise[indice]->controller == true) {
@@ -423,22 +413,17 @@ int* isClient(Client client, int* nb_client, client_t listeClientsEntreprise[])
 		  infos_client[0]= status;
 		  infos_client[1]= indice;
 		  cout << "status : " << infos_client[0] << " indice : "<< infos_client[1] << endl;
-		  
-		  // Accès concurrant ?
 		  listeClientsEntreprise[indice]->des_client = client.des_client;
 		}
 		indice++;		
 	} // end loop
-	cout << "test client name after strcmp : "<<listeClientsEntreprise[0]->name<<endl;
 return infos_client;
 }
 
 int* authentification (int desClient, int* nb_client, client_t listeClientsEntreprise[])
 {
 	int reception(-1);
-	int* infos_client(NULL);
-	//int* infos_client = (int*)malloc(2*sizeof(int));
-	
+	int* infos_client(NULL);	
 	Client temp_client;
   
   cout << "Attente login client... "<< endl;
@@ -449,11 +434,8 @@ int* authentification (int desClient, int* nb_client, client_t listeClientsEntre
 	{
 		cout << "login : " << temp_client.message << endl;
 		sprintf(temp_client.name,temp_client.message);
-		temp_client.des_client = desClient;
-		
+		temp_client.des_client = desClient;		
 		infos_client = isClient(temp_client, nb_client, listeClientsEntreprise);
-//		infos_client[0]=1;
-//		infos_client[1]=1;
 		
 	  cout << "Status client : "<< infos_client[0] << endl;
 	  send(desClient,&infos_client[0],sizeof(int),0);
@@ -480,9 +462,6 @@ void* th_new_client(void* param)
   struct controller_infos controller_infos;
  	int* infos_client(NULL);
   int statusClient(-1);
-  
-  cout << "test client name th_new : "<< data->ptr_client_list[0]->name << endl;
-
   
   infos_client = authentification(data->descripteur,data->nb_client,data->ptr_client_list);
   cout << "Status : " << infos_client[0] << " Indice : "<< infos_client[1] << endl;
@@ -519,12 +498,10 @@ void* th_new_client(void* param)
         }
         pthread_join(idThread, NULL);
         break;
-      default : perror("Petit souci switch(statusClient)");
+      default : cerr << "Petit souci switch(statusClient)" <<endl;
         close(data->descripteur);
-        exit(EXIT_FAILURE);
     }
-    //cout << "Compteur nombre connectés incrémenté !" << endl;
-    //data->nb_connected_client++; // gestion d'accès concurrant ?
+
     if(infos_client != NULL)
     free(infos_client);    
   }
@@ -538,7 +515,6 @@ int main(int args,char* argv[]) {
 	int port, desCurrentClient, DesServer, localBR, nb_connected_client(0);
 	struct sockaddr_in brCv;
 	socklen_t sizeLocalBr;
-	//pthread_mutex_init(&mutex, NULL);
 	
 	int nb_client = 5;
   client_t listeClientsEntreprise[nb_client];
@@ -549,36 +525,39 @@ int main(int args,char* argv[]) {
   data->nb_connected_client= &nb_connected_client;
 
 // Test création client
-  int test= 0;
 	client_t testcli = (client_t) malloc(sizeof(client_t));
 	sprintf(testcli->name,"tintin");	
 	sprintf(testcli->password,"milou");
 	testcli->claimed_report=false;
 	testcli->received_report=0;
+	testcli->controller=false;
 	
 	client_t testcli2 = (client_t) malloc(sizeof(client_t));
 	sprintf(testcli2->name,"bob");	
 	sprintf(testcli2->password,"boby");
-	testcli2->claimed_report=false;
-	testcli->received_report=0;
+	testcli2->claimed_report=true;
+	testcli2->received_report=0;
+	testcli2->controller=false;
 	
 	client_t testcli3 = (client_t) malloc(sizeof(client_t));
 	sprintf(testcli3->name,"tutu");	
 	sprintf(testcli3->password,"boby");
 	testcli3->claimed_report=true;
-	testcli->received_report=0;
+	testcli3->received_report=1;
+	testcli3->controller=false;
 	
 	client_t testcli4 = (client_t) malloc(sizeof(client_t));
 	sprintf(testcli4->name,"beber");	
 	sprintf(testcli4->password,"boby");
 	testcli4->claimed_report=false;
-	testcli->received_report=0;
+	testcli4->received_report=2;
+	testcli4->controller=false;
 	
 	client_t testController = (client_t) malloc(sizeof(client_t));
 	sprintf(testController->name,"haddock"); // enfin lui !
 	sprintf(testController->password,"boby");
   testController->controller=true;
-  testcli->received_report=0;
+  testController->received_report=0;
   
 	listeClientsEntreprise[0] = testcli;
 	listeClientsEntreprise[1] = testcli2;
@@ -587,15 +566,6 @@ int main(int args,char* argv[]) {
 	listeClientsEntreprise[4] = testController;
 	data->nb_client = &nb_client;
 
-		
-/* Petits test	
-  data->ptr_client_list = listeClientsEntreprise;
-  cout << *data->nb_client << endl;
-  cout << *data->nb_connected_client << endl;
-    cout << *data->nb_client << endl;
-  cout << testcli->name << endl;
-  cout << listeClientsEntreprise[0]->password << endl;
-*/
 
 	if(args == 2) {
 		cout << "N° port saisi : "<< argv[1] << endl;
@@ -628,12 +598,11 @@ int main(int args,char* argv[]) {
 		desCurrentClient = accept(DesServer,(struct sockaddr *)&brCv,&sizeLocalBr);
 		if(desCurrentClient == -1)
 			perror("Erreur accept ");
-		else {
+		else 
+		{
   		pthread_t idThread; 
-			cout << "Nouveau Client accepté" << endl<<endl;
+			cout<< endl <<endl << " <=== Nouveau Client accepté ===>" << endl;
 		  data->descripteur = desCurrentClient;
-		  
-		  cout << "test nom client main : " <<listeClientsEntreprise[0]->name << endl;
 			
 			if(pthread_create(&idThread,NULL,th_new_client,(void*)data) != 0) {
         perror("Erreur création th_new_client");

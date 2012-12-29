@@ -79,7 +79,7 @@ int OuvreRapport(const char *employe) {
   g_string_free(s, TRUE);
   
   s = g_string_new(employe);
-  g_string_append(s, ".pdf");
+  g_string_append(s, "/temp.pdf");
   
   r = open(s->str, O_RDONLY);
   if (r < 0) {
