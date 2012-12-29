@@ -60,7 +60,6 @@ void add_lign_to_report(client_t client)
 {
 	int continu=-1;
 	string tempMessage= string("");
-  cout << "Debut ajout de ligne..." << endl;
 	
 	while (continu!=2)
 	{	  
@@ -80,13 +79,7 @@ void add_lign_to_report(client_t client)
     send(client->des_client,client->message,sizeof(client->message),0);
 	  
 	  continu = 2;
-//	  cout<<"Avez vous terminé?:   "<<endl;
-//	  cout<<"1-Non"<<endl;
-//	  cout<<"2-Oui"<<endl;
-//	  cin.clear();
-//	  cin>>continu;
-//	  send(client->des_client,&continu,sizeof(int),0);
-//	  cin.ignore(1,'\n'); // vide le buffer  
+
 	}
 }
 
@@ -111,7 +104,7 @@ void write_employee_report(client_t client)
       case ADD_LINES :  cout << "Demande d'ajout de ligne" << endl; 
 	        add_lign_to_report(client);
 	        break;
-	    case FINISH_REPORT : cout << "Demande de finalisation" << endl; 
+	    case FINISH_REPORT : cout << "Finalisation terminée !" << endl; 
 	        continu = 0;
 	    case 3 : continu = 0;
 	      	break;		
@@ -140,18 +133,20 @@ bool download_PDF(client_t employee)
 	  cout << "Début du téléchargement..." << endl;
 	  recv(employee->des_client,&file_size,sizeof(int),0);
 	  if(file_size == 0) { 
-	   perror("Erreur reception taille fichier");
+  	   cerr << "Erreur téléchargement ressayer plus tard" << endl;
+  	}
+	  else 
+	  {
+	    while(received_bytes < file_size)
+	    {	
+		    read = recv(employee->des_client,file_content,sizeof(file_content),0);
+		    fwrite(file_content,sizeof(char),read,pdf_file);
+		    received_bytes += read;
+	    }
+	    cout << "Rapport reçu !" << endl << endl;
+	    file_received = true;
+	    fclose(pdf_file);	
 	  }
-	  
-	  while(received_bytes < file_size)
-	  {	
-		  read = recv(employee->des_client,file_content,sizeof(file_content),0);
-		  fwrite(file_content,sizeof(char),read,pdf_file);
-		  received_bytes += read;
-	  }
-	  cout << "Rapport reçu !" << endl << endl;
-	  file_received = true;
-	  fclose(pdf_file);	
 	}
 	else { 
 	  cout << "Fichier PDF inconnu" << endl;
@@ -227,7 +222,7 @@ void* th_controller(void* param)
   
   while(continu != 0)
   { 
-    cout << "Que voulez vous faire ?" <<endl;
+    cout << endl << "Que voulez vous faire ?" <<endl;
     cout << "1 : Demande à un employé un rapport" <<endl;
     cout << "2 : Télécharger un rapport PDF d'un employé" <<endl;
     cin >> request;

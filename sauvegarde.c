@@ -79,7 +79,7 @@ int OuvreRapport(const char *employe) {
   g_string_free(s, TRUE);
   
   s = g_string_new(employe);
-  g_string_append(s, "/temp.pdf");
+  g_string_append(s, ".pdf");
   
   r = open(s->str, O_RDONLY);
   if (r < 0) {
@@ -118,11 +118,11 @@ int Ecrit(const char *message, const char *employe) {
     if (errno == ENOENT) { // le répertoire n'existe pas
       res = mkdir(employe, S_IRWXU|S_IRGRP|S_IXGRP|S_IROTH|S_IXOTH);
       if (res == -1) {
-	perror("problème à la création du répertoire");
+	//perror("problème à la création du répertoire");
 	return -1;
       }
     } else {
-      perror("problème à l'ouverture du répertoire");
+      //perror("problème à l'ouverture du répertoire");
       return -1;
     }
   } else {
@@ -174,12 +174,15 @@ int main(int argc, char *argv[]){
     case 1 :
     employee_message = argv[2];
     employee_name = argv[3];
-    Ecrit(employee_message, employee_name);
+    if(Ecrit(employee_message, employee_name)==-1)
+      //return EXIT_FAILURE;
     break;
     
     case 2 :
     employee_name = argv[2];
     fd = OuvreRapport(employee_name);
+    if(fd == -1)
+      //return EXIT_FAILURE;
     break;
   }
 

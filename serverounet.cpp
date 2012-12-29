@@ -55,7 +55,7 @@ struct controller_infos {
    data_t data;  
 };
 
-pthread_mutex_t mutex;
+pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
 
 
 /**
@@ -63,41 +63,42 @@ pthread_mutex_t mutex;
 **/
 void update_employee_report_status(client_t employee)
 {  
-   cout << "Status rapport : " << employee->claimed_report << endl;
    if(employee->claimed_report)
    {
       switch(employee->received_report)
       {
-      case 0 : 
-// le rapport a été saisi mais l'employé est toujours connecté
-        pthread_mutex_lock(&mutex);
-          employee->received_report = REPORT_READY_STILL_CONNECTED;
-        pthread_mutex_unlock(&mutex);
-        break;
-        
-      case REPORT_READY_STILL_CONNECTED : 
-// le rapport a été saisi et l'employé est déconnecté et disponible au controlleur
-        pthread_mutex_lock(&mutex);
-          employee->received_report = REPORT_READY_DISCONNECTED;
-        pthread_mutex_unlock(&mutex);
-        break;
-      default : cerr << "Erreur update report status" << endl;      
+        case 0 : 
+  // le rapport a été saisi mais l'employé est toujours connecté
+          pthread_mutex_lock(&mutex);
+            employee->received_report = REPORT_READY_STILL_CONNECTED;
+          pthread_mutex_unlock(&mutex);
+          break;
+          
+        case REPORT_READY_STILL_CONNECTED : 
+  // le rapport a été saisi et l'employé est déconnecté et disponible au controlleur
+          pthread_mutex_lock(&mutex);
+            employee->received_report = REPORT_READY_DISCONNECTED;
+          pthread_mutex_unlock(&mutex);
+          break;
+        default : cerr << "Erreur update report status" << endl;      
       }
    }
-   cout << "Status rapport : " << employee->claimed_report << endl;
 }
 
 /**
 * Gère l'envoi du rapport PDF à l'employé
 **/
-void download_PDF(client_t employee)
+bool download_PDF(client_t employee)
 {
+  cout << employee->des_client << " | " << employee->name<< endl;
 	int file_size(0),read(-1),des_client(employee->des_client);
 	bool file_sent(false);
-	const char* pdf_path = "docs/sujet.pdf";
-	FILE* pdf_file = NULL;
-	pdf_file = fopen(pdf_path, "rb");
+  char pdf_path[30],employee_name[50];
+  sprintf(employee_name,employee->name);
+	sprintf(pdf_path,"%s/temp.pdf",employee->name);	  
+	FILE* pdf_file = fopen((const char*)pdf_path, "rb");
 	char file_content[BUFFER_SIZE];
+  
 
 	if (pdf_file != NULL)
 	{
@@ -122,8 +123,27 @@ void download_PDF(client_t employee)
   else {
   	perror("Rapport PDF inconnu");
 	}
-
+	
+	employee->des_client = des_client;
+	sprintf(employee->name,employee_name);
+	
+return file_sent;
 }
+
+/**
+* Ajoute une ligne dans le rapport
+**/
+void add_lign(client_t employee)
+{
+
+  if(recv(employee->des_client,employee->message,sizeof(employee->message),0)!=-1)
+  {
+    if(fork()==0)
+      execl("sauvegarde","sauvegarde" , "1" ,employee->message,employee->name, NULL);
+  }
+}
+
+
 
 /**
 * Déconnecte un client
@@ -155,7 +175,7 @@ bool verification_demande_rapport(client_t employee)
 void employee_report_to_pdf(client_t employee)
 {
   int continu(-1),reception(0);
-  int request(1);
+  int request(1),result(1);
   
   cout << "Début saisie rapport par le client "<< employee->name << endl;
   cout<< "Des client : " << employee->des_client << endl;
@@ -167,28 +187,31 @@ void employee_report_to_pdf(client_t employee)
 		}
 	  else {
 	    cout << "Demande reçue : "<< request << endl;
-
-	    switch(request) 
-	    {		   
-		    case ADD_LINES :  cout << "Demande d'ajout de ligne" << endl;
-		      if(recv(employee->des_client,employee->message,sizeof(employee->message),0)!=-1)
-		      {
-		       execl("sauvegarde","sauvegarde" , "1" ,employee->message,employee->name, NULL);
-  	       cout << "Ligne ajoutée !" << endl;
-  	       }
-		      break;
-		    case FINISH_REPORT : cout << "Demande de finalisation" << endl; 
-		      execl("sauvegarde","sauvegarde" , "2" ,employee->name, NULL);      
-		    	break;
-		    case 3 : cout << "Quit" << endl;
-		      continu = 0;
-		      break;
-		    default : cerr << "Erreur switch reportToPDF"<<endl;
-	    }	
     }
-  } // end loop
+    
+    switch(request) 
+    {		   
+      case ADD_LINES :  cout << "Demande d'ajout de ligne" << endl;
+        add_lign(employee);
+        cout << "Ligne ajoutée avec succes "<<  endl;  
+        break;        
+      case FINISH_REPORT : cout << "Demande de finalisation" << endl;
+        if(fork()==0) {
+          execl("sauvegarde","sauvegarde" , "2" ,employee->name, NULL);
+        }
+        //update_employee_report_status(employee);
+        continu = 0;
+      	break;
+      	
+      case 3 : cout << "Quit" << endl;
+        continu = 0;
+        break;
+      default : cerr << "Erreur switch reportToPDF"<<endl;
+    }	
+  }// end loop
   
-}
+} 
+  
 
 /**
 * Reception de la liste d'employés devant envoyer un rapport
@@ -214,8 +237,12 @@ void* th_employee_management(void* param)
   
   while(continu != 0)
   {
-    if(recv(employee->des_client,&request,sizeof(int),0)==-1)
+    cout <<  employee->des_client << endl;
+    if(recv(employee->des_client,&request,sizeof(int),0)==-1) 
+    {
       perror("Erreur reception employee management");
+      continu = 0;
+    }
       
     switch(request) {
       case 1 :  cout << "employee go to report pdf"<<endl;
@@ -227,12 +254,12 @@ void* th_employee_management(void* param)
       case 3 : continu = 0; 
         cout << "employee quit" << endl;
         break;
-      default : cout << "Erreur de saisie, veuillez recommencer" << endl;
+      default : cerr << "Erreur switch employee management" << endl;
     }
     
   }
-  disconnection(employee);
   update_employee_report_status(employee);
+  disconnection(employee);
 
 pthread_exit(NULL);
 }
@@ -331,7 +358,8 @@ void * th_controller_management(void* param)
   while(continu != 0)
   {
     // reception de la demande du controller
-    recv(des_controller,&request,sizeof(int),0);
+    if(recv(des_controller,&request,sizeof(int),0) == -1)
+      continu=0;
     
     switch(request)
     {
@@ -510,6 +538,7 @@ int main(int args,char* argv[]) {
 	int port, desCurrentClient, DesServer, localBR, nb_connected_client(0);
 	struct sockaddr_in brCv;
 	socklen_t sizeLocalBr;
+	//pthread_mutex_init(&mutex, NULL);
 	
 	int nb_client = 5;
   client_t listeClientsEntreprise[nb_client];
@@ -520,6 +549,7 @@ int main(int args,char* argv[]) {
   data->nb_connected_client= &nb_connected_client;
 
 // Test création client
+  int test= 0;
 	client_t testcli = (client_t) malloc(sizeof(client_t));
 	sprintf(testcli->name,"tintin");	
 	sprintf(testcli->password,"milou");
@@ -611,6 +641,7 @@ int main(int args,char* argv[]) {
 		}// End if Client accepté
 	} // End loop
 	
+	 pthread_mutex_destroy(&mutex);
 /* Fermeture employee->des_clientet server */
 	close(DesServer);
 
