@@ -276,8 +276,8 @@ client_t listeClientsEntreprise[])
 	{		  
 		if(strcmp(listeClientsEntreprise[indice]->name,employee_name)==0)
 		{
-		  cout << "L'employé trouvé !"<< endl;
-	    if(listeClientsEntreprise[indice]->received_report = REPORT_READY_DISCONNECTED) 
+		  cout << "L'employé "<< listeClientsEntreprise[indice]->name <<" a été trouvé !"<< endl;
+	    if(listeClientsEntreprise[indice]->received_report == REPORT_READY_DISCONNECTED) 
 	    {
 	      request = REPORT_READY;
 	      send(des_controller,&request,sizeof(int),0);
@@ -525,35 +525,35 @@ int main(int args,char* argv[]) {
   data->nb_connected_client= &nb_connected_client;
 
 // Test création client
-	client_t testcli = (client_t) malloc(sizeof(client_t));
+	client_t testcli = (client_t) malloc(sizeof(Client));
 	sprintf(testcli->name,"tintin");	
 	sprintf(testcli->password,"milou");
 	testcli->claimed_report=false;
 	testcli->received_report=0;
 	testcli->controller=false;
 	
-	client_t testcli2 = (client_t) malloc(sizeof(client_t));
+	client_t testcli2 = (client_t) malloc(sizeof(Client));
 	sprintf(testcli2->name,"bob");	
 	sprintf(testcli2->password,"boby");
 	testcli2->claimed_report=true;
 	testcli2->received_report=0;
 	testcli2->controller=false;
 	
-	client_t testcli3 = (client_t) malloc(sizeof(client_t));
+	client_t testcli3 = (client_t) malloc(sizeof(Client));
 	sprintf(testcli3->name,"tutu");	
 	sprintf(testcli3->password,"boby");
 	testcli3->claimed_report=true;
 	testcli3->received_report=1;
 	testcli3->controller=false;
 	
-	client_t testcli4 = (client_t) malloc(sizeof(client_t));
+	client_t testcli4 = (client_t) malloc(sizeof(Client));
 	sprintf(testcli4->name,"beber");	
 	sprintf(testcli4->password,"boby");
 	testcli4->claimed_report=false;
 	testcli4->received_report=2;
 	testcli4->controller=false;
 	
-	client_t testController = (client_t) malloc(sizeof(client_t));
+	client_t testController = (client_t) malloc(sizeof(Client));
 	sprintf(testController->name,"haddock"); // enfin lui !
 	sprintf(testController->password,"boby");
   testController->controller=true;
